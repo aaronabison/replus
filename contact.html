@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us — Replus</title>
+<meta name="description" content="Get in touch with the Replus team — questions, feedback, or partnership inquiries.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo"><button style="background-color:transparent; border-color:transparent; display:; gap:5px"><img src="replus-logo.jpg" style="width:30px; height:30px; border-radius:8px;">Replus</button></a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="team.html">Team</a>
+      <a href="download.html">Download</a>
+      <a href="contact.html" aria-current="page">Contact</a>
+    </nav>
+    <a href="download.html" class="btn btn-primary nav-cta">Get Replus</a>
+    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false"><span class="menu-plus"></span></button>
+  </div>
+</header>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="about.html">About</a>
+  <a href="team.html">Team</a>
+  <a href="download.html">Download</a>
+  <a href="contact.html">Contact</a>
+  <p class="mobile-nav-foot">Add the people who add to you.</p>
+</div>
+
+<main>
+
+  <section class="page-hero">
+    <canvas class="plus-field" data-gap="50"></canvas>
+    <div class="wrap">
+      <span class="eyebrow">Contact</span>
+      <h1>Say hello. We read everything.</h1>
+      <p class="lede">Questions, feedback, press, or partnership ideas — this reaches the actual team, not a queue.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap reveal">
+      <div class="contact-grid">
+        
+        <div>
+          <div class="contact-info-item">
+            <h4>Email</h4>
+            <a href="mailto:hello@replus.app">hello@replus.one</a>
+          </div>
+          <div class="contact-info-item">
+            <h4>Support</h4>
+            <a href="mailto:support@replus.one">support@replus.one</a>
+          </div>
+
+          <div class="contact-info-item">
+            <h4>Elsewhere</h4>
+            <p><a href="#">Twitter</a> · <a href="#">Instagram</a> · <a href="#">LinkedIn</a></p>
+          </div>
+        </div>
+
+        <div style="margin:20; border-radius:10px; background-color:whitesmoke;">
+          <form id="contactForm" style="margin:20px;" novalidate>
+             <p><span class="eyebrow">Contact form</span></p>
+             <br>
+            <div class="field">
+              <label for="name">Name</label>
+              <input type="text" id="name" name="name" autocomplete="name">
+              <p class="field-error">Tell us your name.</p>
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" autocomplete="email">
+              <p class="field-error">Enter a valid email.</p>
+            </div>
+            <div class="field">
+              <label for="message">Message</label>
+              <textarea id="message" name="message"></textarea>
+              <p class="field-error">A few more words would help.</p>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block interactive">Send message</button>
+            <p class="form-status" id="formStatus"></p>
+          </form>
+        </div>
+      </div>
+
+      <div class="faq reveal">
+        <span class="eyebrow">Before you write in</span>
+        <h2 style="margin: 14px 0 30px; font-size: clamp(24px, 3vw, 32px);">A few things people usually ask.</h2>
+
+        <div class="faq-item">
+          <button class="faq-q"><span>Is Replus available on web browser?</span><span class="plus-icon">+</span></button>
+          <div class="faq-a"><p>Replus is not yet available in web version. Our app can be directly installed from the Google PlayStore for Android,  the App Store for iOS & on our download page for PC.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q"><span>Why isn't Replus free?</span><span class="plus-icon">+</span></button>
+          <div class="faq-a"><p>Replus doesn't sell your data to anyone including partners or run ads inside your social experience, so our pretty inexpensive plans cover those costs.</p> <p>Replus grants you three months of free usage on our platforms as a new user.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q"><span>How is Replus an all in one social app?</span></span><span class="plus-icon">+</span></button>
+          <div class="faq-a"><p>Replus is built with a combination of new features and platforms that no other social networking app has given a try.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q"><span>How do I trust Replus?</span><span class="plus-icon">+</span></button>
+          <div class="faq-a"><p>We DO NOT sell users data. Every revenue we need to make are included in our little subscription plans. The goal is to make users comfortable with thier social life.
+          </p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <button style="background-color:transparent; border-color:transparent; display:flex; gap:5px"><img src="replus-logo-black.jpg" style="width:30px; height:30px; border-radius:8px;"><span class="logo">Replus</span></button>
+        <p>A social network built as a complete social ecosystem.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="download.html">Download</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="team.html">Team</a>
+          <a href="aaron.html">Our Founder</a>
+          <a href="contact.html">Contact</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Replus Stacks.</span>
+      <div class="footer-social">
+        <a href="#">Twitter</a>
+        <a href="#">Instagram</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

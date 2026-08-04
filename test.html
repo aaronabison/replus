@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Zip Daily Puzzle</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #stopwatch {
+      font-size: 22px;
+      font-weight: bold;
+      color: #38bdf8;
+      background-color: #1e293b;
+      padding: 6px 18px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    #board-wrapper {
+      position: relative;
+      width: 340px;
+      height: 340px;
+    }
+
+    #snackbar {
+      position: absolute;
+      top: -45px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ef4444;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 20;
+      white-space: nowrap;
+    }
+
+    #snackbar.show {
+      opacity: 1;
+      transform: translate(-50%, 5px);
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 8px;
+      width: 100%;
+      height: 100%;
+      background-color: #1e293b;
+      padding: 10px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transition: visibility 0.5s ease;
+    }
+
+    .cell {
+      background-color: #334155;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #94a3b8;
+      z-index: 1;
+    }
+
+    .cell.checkpoint {
+      border: 2px solid #f59e0b;
+      color: #f59e0b;
+      background-color: #1e293b;
+    }
+
+    #svg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      transition: visibility 0.5s ease;
+    }
+
+    #path-line {
+      fill: none;
+      stroke: #38bdf8;
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.2s;
+    }
+
+    #completion-card {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #1e293b;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 10;
+    }
+
+    #completion-card.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #completion-card h2 {
+      margin: 0 0 10px 0;
+      color: #38bdf8;
+      font-size: 24px;
+    }
+
+    #completion-card p.time-result {
+      font-size: 18px;
+      color: #f8fafc;
+      margin: 10px 0;
+    }
+
+    #completion-card span.highlight {
+      color: #4ade80;
+      font-weight: bold;
+      font-size: 24px;
+    }
+
+    .shake {
+      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    #path-line.error {
+      stroke: #ef4444 !important;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="stopwatch">0.0s</div>
+
+  <div id="board-wrapper">
+    <div id="snackbar">⚠️ You missed some boxes!</div>
+
+    <div id="grid"></div>
+    <svg id="svg-layer">
+      <polyline id="path-line" points="" />
+    </svg>
+
+    <div id="completion-card">
+      <h2>🎉 Daily Puzzle Cleared!</h2>
+      <p class="time-result">You solved it in <br><span id="final-time" class="highlight">0.0</span> seconds!</p>
+      <p style="color: #94a3b8; margin-top: 15px;">Come back tomorrow for a new puzzle!</p>
+    </div>
+  </div>
+
+  <script>
+    const GRID_SIZE = 5;
+    const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+
+    // =========================================================================
+    // 🛠️ ADMIN CONFIGURATION
+    // =========================================================================
+    
+    // 1. Full 25-step solution path
+    const ADMIN_SOLUTION_PATH = [
+       0,  1,  2,  3,  4,
+       9, 14, 19, 24, 23,
+      22, 21, 20, 15, 10,
+       5,  6,  7,  8, 13,
+      18, 17, 16, 11, 12
+    ];
+
+    // 2. Map step index (0 to 24) -> Checkpoint Number (1 to 6)
+    // NOTE: Step 24 (the 25th step) is mapped to #6 to ensure it's the final box.
+    const ADMIN_CHECKPOINT_STEPS = {
+      0:  1,  // Step 0  (Cell 0)  -> #1 (Start)
+      4:  2,  // Step 4  (Cell 4)  -> #2
+      8:  3,  // Step 8  (Cell 24) -> #3
+      13: 4,  // Step 13 (Cell 15) -> #4
+      18: 5,  // Step 18 (Cell 8)  -> #5
+      24: 6   // Step 24 (Cell 12) -> #6 (End / Last Box)
+    };
+
+    // Construct grid checkpoints object
+    let checkpoints = {};
+    Object.keys(ADMIN_CHECKPOINT_STEPS).forEach(step => {
+      const cellIndex = ADMIN_SOLUTION_PATH[step];
+      checkpoints[cellIndex] = ADMIN_CHECKPOINT_STEPS[step];
+    });
+
+    // Determine the max checkpoint number dynamically
+    const maxCheckpoint = Math.max(...Object.values(checkpoints));
+
+    // =========================================================================
+
+    let path = [];
+    let isDragging = false;
+    let isCompleted = false;
+    let currentTouchPos = null;
+    let audioCtx = null;
+    let highestCheckpointReached = 0;
+
+    let timerInterval = null;
+    let startTime = null;
+    let elapsedTimeInSeconds = 0;
+    let timerStarted = false;
+
+    const wrapper = document.getElementById('board-wrapper');
+    const grid = document.getElementById('grid');
+    const svgLayer = document.getElementById('svg-layer');
+    const svgLine = document.getElementById('path-line');
+    const timerDisplay = document.getElementById('stopwatch');
+    const completionCard = document.getElementById('completion-card');
+    const finalTimeDisplay = document.getElementById('final-time');
+    const snackbar = document.getElementById('snackbar');
+
+    function startTimer() {
+      if (timerStarted) return;
+      timerStarted = true;
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        elapsedTimeInSeconds = (Date.now() - startTime) / 1000;
+        timerDisplay.innerText = elapsedTimeInSeconds.toFixed(1) + 's';
+      }, 100);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    function playBeepSound() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+      } catch (e) {}
+
+      if (navigator.vibrate) {
+        navigator.vibrate(35);
+      }
+    }
+
+    function triggerPlentyConfetti() {
+      if (typeof confetti !== 'function') return;
+
+      const duration = 2.5 * 1000;
+      const animationEnd = Date.now() + duration;
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const particleCount = 40;
+        confetti({ particleCount, angle: 60, spread: 70, origin: { x: 0, y: 0.6 } });
+        confetti({ particleCount, angle: 120, spread: 70, origin: { x: 1, y: 0.6 } });
+      }, 250);
+    }
+
+    function showSnackbar(message) {
+      snackbar.innerText = message;
+      snackbar.classList.add('show');
+    }
+
+    function hideSnackbar() {
+      snackbar.classList.remove('show');
+    }
+
+    function createGrid() {
+      grid.innerHTML = '';
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+
+        if (checkpoints[i] !== undefined) {
+          cell.innerText = checkpoints[i];
+          cell.classList.add('checkpoint');
+        }
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function getCellCenter(index) {
+      const cell = grid.children[index];
+      if (!cell) return { x: 0, y: 0 };
+      const cellRect = cell.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+
+      return {
+        x: cellRect.left - wrapperRect.left + cellRect.width / 2,
+        y: cellRect.top - wrapperRect.top + cellRect.height / 2
+      };
+    }
+
+    function getIndexFromPoint(x, y) {
+      const element = document.elementFromPoint(x, y);
+      if (element && element.classList.contains('cell')) {
+        return parseInt(element.dataset.index, 10);
+      }
+      return null;
+    }
+
+    function isOrthogonalAdjacent(idx1, idx2) {
+      const r1 = Math.floor(idx1 / GRID_SIZE);
+      const c1 = idx1 % GRID_SIZE;
+      const r2 = Math.floor(idx2 / GRID_SIZE);
+      const c2 = idx2 % GRID_SIZE;
+
+      return (Math.abs(r1 - r2) === 1 && c1 === c2) || (Math.abs(c1 - c2) === 1 && r1 === r2);
+    }
+
+    function updateLineSVG() {
+      if (path.length === 0) {
+        svgLine.setAttribute('points', '');
+        return;
+      }
+
+      let pointsStr = path
+        .map(idx => {
+          const pt = getCellCenter(idx);
+          return `${pt.x},${pt.y}`;
+        })
+        .join(' ');
+
+      if (isDragging && currentTouchPos && !isCompleted) {
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const dragX = currentTouchPos.x - wrapperRect.left;
+        const dragY = currentTouchPos.y - wrapperRect.top;
+        pointsStr += ` ${dragX},${dragY}`;
+      }
+
+      svgLine.setAttribute('points', pointsStr);
+    }
+
+    function handleDragMove(x, y) {
+      if (isCompleted) return;
+
+      currentTouchPos = { x, y };
+      const index = getIndexFromPoint(x, y);
+
+      if (index === null) {
+        updateLineSVG();
+        return;
+      }
+
+      if (path.length === 0) {
+        path.push(index);
+        if (checkpoints[index] !== undefined) {
+          highestCheckpointReached = checkpoints[index];
+          playBeepSound();
+        }
+        startTimer();
+        updateLineSVG();
+        return;
+      }
+
+      const lastIndex = path[path.length - 1];
+
+      if (path.length > 1 && index === path[path.length - 2]) {
+        const removed = path.pop();
+        if (checkpoints[removed] !== undefined && checkpoints[removed] === highestCheckpointReached) {
+          highestCheckpointReached--;
+        }
+        updateLineSVG();
+        return;
+      }
+
+      if (isOrthogonalAdjacent(lastIndex, index) && !path.includes(index)) {
+        path.push(index);
+
+        if (checkpoints[index] !== undefined) {
+          if (checkpoints[index] === highestCheckpointReached + 1) {
+            highestCheckpointReached = checkpoints[index];
+            playBeepSound();
+          }
+        }
+      }
+
+      updateLineSVG();
+    }
+
+    function validateSolution() {
+      const visitedAllBoxes = (path.length === TOTAL_CELLS);
+      const lastCellInPath = path[path.length - 1];
+      
+      let correctOrder = true;
+      let expectedNum = 1;
+
+      for (const idx of path) {
+        if (checkpoints[idx] !== undefined) {
+          if (checkpoints[idx] !== expectedNum) {
+            correctOrder = false;
+            break;
+          }
+          expectedNum++;
+        }
+      }
+
+      // Ensure the final box in the path is specifically the max checkpoint
+      const endedOnLastNumber = (checkpoints[lastCellInPath] === maxCheckpoint);
+
+      return {
+        isValid: visitedAllBoxes && correctOrder && endedOnLastNumber,
+        visitedAllBoxes,
+        correctOrder,
+        endedOnLastNumber
+      };
+    }
+
+    function handleDragEnd() {
+      if (!isDragging || isCompleted) return;
+      isDragging = false;
+      currentTouchPos = null;
+
+      if (path.length === 0) return;
+
+      const result = validateSolution();
+
+      if (result.isValid) {
+        isCompleted = true;
+        stopTimer();
+        playBeepSound();
+        updateLineSVG();
+        hideSnackbar();
+
+        triggerPlentyConfetti();
+
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "GAME_OVER",
+            status: "SUCCESS",
+            timeTakenSeconds: elapsedTimeInSeconds.toFixed(1)
+          }));
+        }
+
+        setTimeout(() => {
+          finalTimeDisplay.innerText = elapsedTimeInSeconds.toFixed(1);
+          grid.style.visibility = 'hidden';
+          svgLayer.style.visibility = 'hidden';
+          completionCard.classList.add('active');
+        }, 2200);
+
+      } else {
+        if (!result.correctOrder || !result.endedOnLastNumber) {
+          showSnackbar("⚠️ Numbers out of order!");
+        
+        } else if (!result.visitedAllBoxes) {
+          showSnackbar("⚠️ You missed some boxes!");
+        }
+
+        svgLine.classList.add('error');
+        wrapper.classList.add('shake');
+
+        setTimeout(() => {
+          wrapper.classList.remove('shake');
+          svgLine.classList.remove('error');
+          hideSnackbar();
+          path = [];
+          highestCheckpointReached = 0;
+          updateLineSVG();
+        }, 750);
+      }
+    }
+
+    wrapper.addEventListener('pointerdown', (e) => {
+      if (isCompleted) return;
+      isDragging = true;
+      handleDragMove(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (isDragging && !isCompleted) {
+        handleDragMove(e.clientX, e.clientY);
+      }
+    });
+
+    window.addEventListener('pointerup', handleDragEnd);
+
+    createGrid();
+  </script>
+</body>
+</html>

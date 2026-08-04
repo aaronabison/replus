@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Ultimate AI Virtual Match Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #header-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 340px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: bold;
+    }
+
+    #scoreboard {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 340px;
+      margin-bottom: 12px;
+      padding: 12px 18px;
+      background-color: #1e293b;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .team {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .team-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: #94a3b8;
+      margin-bottom: 4px;
+      max-width: 100px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .score {
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    #match-clock {
+      font-size: 20px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    #game-container {
+      position: relative;
+      width: 340px;
+      height: 220px;
+      background-color: #15803d;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 3px solid #166534;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #prediction-overlay, #result-overlay, #leaderboard-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(15, 23, 42, 0.96);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 15px;
+      text-align: center;
+      transition: opacity 0.3s ease;
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    h3 {
+      margin: 0 0 12px 0;
+      color: #f8fafc;
+      font-size: 18px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn.home { background-color: #ef4444; }
+    .btn.draw { background-color: #64748b; }
+    .btn.away { background-color: #3b82f6; }
+    .btn.green { background-color: #22c55e; }
+    .btn.secondary { background-color: #475569; font-size: 12px; padding: 6px 10px; margin-top: 10px;}
+
+    #matchup-title {
+      font-size: 14px;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      font-weight: bold;
+    }
+
+    #prediction-tag {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #fde047;
+      text-transform: uppercase;
+    }
+
+    .leaderboard-list {
+      width: 100%;
+      max-width: 260px;
+      text-align: left;
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #334155;
+    }
+    .leaderboard-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+  <div id="header-panel">
+    <span id="tries-counter">Unlimited Play</span>
+    <button class="btn secondary" onclick="openLeaderboard()" style="margin:0; padding:4px 8px;">🏆 Leaderboard</button>
+  </div>
+
+  <div id="scoreboard">
+    <div class="team">
+      <span class="team-name" id="home-label" style="color: #ef4444;">HOME</span>
+      <span class="score" id="home-score">0</span>
+    </div>
+    <div id="match-clock">00'</div>
+    <div class="team">
+      <span class="team-name" id="away-label" style="color: #3b82f6;">AWAY</span>
+      <span class="score" id="away-score">0</span>
+    </div>
+  </div>
+
+  <div id="prediction-tag">SELECT MATCH & PREDICT</div>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="340" height="220"></canvas>
+
+    <div id="prediction-overlay">
+      <div id="matchup-title">Today's AI Simulated Match</div>
+      <h3>Predict the Outcome</h3>
+      <div class="btn-group">
+        <button class="btn home" onclick="startMatch('HOME')">Home Win</button>
+        <button class="btn draw" onclick="startMatch('DRAW')">Draw</button>
+        <button class="btn away" onclick="startMatch('AWAY')">Away Win</button>
+      </div>
+    </div>
+
+    <div id="result-overlay" class="hidden">
+      <h3 id="result-title">Match Finished</h3>
+      <p id="result-text" style="margin-bottom: 15px; font-weight: bold; font-size: 14px;"></p>
+      <button class="btn green" onclick="resetGame()">Simulate New Match</button>
+    </div>
+
+    <div id="leaderboard-overlay" class="hidden">
+      <h3>🏆 Leaderboard</h3>
+      <div class="leaderboard-list" id="leaderboard-content"></div>
+      <button class="btn secondary" onclick="closeLeaderboard()">Back to Game</button>
+    </div>
+  </div>
+
+  <script>
+    const TEAM_DATABASE = [
+      { name: "Manchester United", att: 88, def: 85 },
+      { name: "Chelsea",   att: 84, def: 86 },
+      { name: "Barcelona FC",   att: 92, def: 82 },
+      { name: "Bayern Munich", att: 90, def: 88 },
+      { name: "Real Madrid",  att: 91, def: 84 },
+      { name: "Paris Saint Germain",    att: 89, def: 80 }
+    ];
+
+    let currentHomeTeam = {};
+    let currentAwayTeam = {};
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const homeScoreEl = document.getElementById('home-score');
+    const awayScoreEl = document.getElementById('away-score');
+    const clockEl = document.getElementById('match-clock');
+    const predictionTag = document.getElementById('prediction-tag');
+    const homeLabel = document.getElementById('home-label');
+    const awayLabel = document.getElementById('away-label');
+    const triesCounterEl = document.getElementById('tries-counter');
+    
+    const predOverlay = document.getElementById('prediction-overlay');
+    const resOverlay = document.getElementById('result-overlay');
+    const resTitle = document.getElementById('result-title');
+    const resText = document.getElementById('result-text');
+    const matchupTitle = document.getElementById('matchup-title');
+    const leaderboardOverlay = document.getElementById('leaderboard-overlay');
+    const leaderboardContent = document.getElementById('leaderboard-content');
+
+    let matchTime = 0;
+    let homeScore = 0;
+    let awayScore = 0;
+    let isPlaying = false;
+    let predictedOutcome = null;
+    let matchSpeed = 0.0085;
+
+    let currentEventText = "";
+    let eventTextColor = "#ffffff";
+    let eventTextAlpha = 0;
+
+    // Resized ball back to classic realistic proportions (radius 3)
+    let ball = { 
+      x: 170, 
+      y: 110, 
+      owner: null, 
+      inTransit: false, 
+      startX: 170, 
+      startY: 110, 
+      targetX: 170, 
+      targetY: 170, 
+      progress: 0, 
+      speed: 0.015,
+      targetOwner: null,
+      radius: 3 
+    };
+
+    let homePlayers = [];
+    let awayPlayers = [];
+    let cutsceneType = null;
+    let cutsceneProgress = 0;
+    let cutsceneTargetTeam = null;
+
+    let forcedCornersScheduled = [];
+
+    let userStats = {
+      scorePoints: 0
+    };
+
+    function updateScoreDisplay() {
+      triesCounterEl.innerText = `Unlimited Play (Points: ${userStats.scorePoints})`;
+    }
+
+    function initSquads() {
+      homePlayers = [
+        { x: 25, y: 110, baseX: 25, baseY: 110, role: 'GK' },
+        { x: 60, y: 40,  baseX: 60, baseY: 40,  role: 'DEF' }, 
+        { x: 70, y: 90,  baseX: 70, baseY: 90,  role: 'DEF' }, 
+        { x: 70, y: 140, baseX: 70, baseY: 140, role: 'DEF' }, 
+        { x: 60, y: 180, baseX: 60, baseY: 180, role: 'DEF' },
+        { x: 110, y: 55, baseX: 110, baseY: 55, role: 'MID' }, 
+        { x: 125, y: 115, baseX: 125, baseY: 115, role: 'MID' }, 
+        { x: 110, y: 165, baseX: 110, baseY: 165, role: 'MID' },
+        { x: 165, y: 50,  baseX: 165, baseY: 50,  role: 'FWD' }, 
+        { x: 175, y: 120, baseX: 175, baseY: 120, role: 'FWD' }, 
+        { x: 160, y: 170, baseX: 160, baseY: 170, role: 'FWD' }
+      ];
+
+      awayPlayers = [
+        { x: 315, y: 110, baseX: 315, baseY: 110, role: 'GK' },
+        { x: 280, y: 40,  baseX: 280, baseY: 40,  role: 'DEF' }, 
+        { x: 270, y: 90,  baseX: 270, baseY: 90,  role: 'DEF' }, 
+        { x: 270, y: 140, baseX: 270, baseY: 140, role: 'DEF' }, 
+        { x: 280, y: 180, baseX: 280, baseY: 180, role: 'DEF' },
+        { x: 230, y: 55,  baseX: 230, baseY: 55,  role: 'MID' }, 
+        { x: 215, y: 115, baseX: 215, baseY: 115, role: 'MID' }, 
+        { x: 230, y: 165, baseX: 230, baseY: 165, role: 'MID' },
+        { x: 175, y: 50,  baseX: 175, baseY: 50,  role: 'FWD' }, 
+        { x: 165, y: 120, baseX: 165, baseY: 120, role: 'FWD' }, 
+        { x: 180, y: 170, baseX: 180, baseY: 170, role: 'FWD' }
+      ];
+    }
+
+    function pickRandomMatch() {
+      const idx1 = Math.floor(Math.random() * TEAM_DATABASE.length);
+      let idx2;
+      do {
+        idx2 = Math.floor(Math.random() * TEAM_DATABASE.length);
+      } while (idx1 === idx2);
+
+      currentHomeTeam = TEAM_DATABASE[idx1];
+      currentAwayTeam = TEAM_DATABASE[idx2];
+
+      homeLabel.innerText = currentHomeTeam.name.toUpperCase();
+      awayLabel.innerText = currentAwayTeam.name.toUpperCase();
+      matchupTitle.innerText = `${currentHomeTeam.name} vs ${currentAwayTeam.name}`;
+      
+      let c1 = Math.floor(Math.random() * 30) + 15;
+      let c2 = Math.floor(Math.random() * 30) + 50;
+      forcedCornersScheduled = [
+        { minute: c1, team: Math.random() < 0.5 ? 'HOME' : 'AWAY', triggered: false },
+        { minute: c2, team: Math.random() < 0.5 ? 'HOME' : 'AWAY', triggered: false }
+      ];
+
+      initSquads();
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti !== 'function') return;
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+
+    function showEventText(text, color = "#ffffff") {
+      currentEventText = text;
+      eventTextColor = color;
+      eventTextAlpha = 1.0;
+    }
+
+    function startMatch(prediction) {
+      predictedOutcome = prediction;
+      predictionTag.innerText = `Prediction: ${prediction === 'HOME' ? currentHomeTeam.name : prediction === 'AWAY' ? currentAwayTeam.name : 'Draw'}`;
+      
+      predOverlay.classList.add('hidden');
+      
+      matchTime = 0;
+      homeScore = 0;
+      awayScore = 0;
+      updateScoreboard();
+      initSquads();
+      ball.x = 170; ball.y = 110; ball.owner = homePlayers[6]; ball.inTransit = false;
+      cutsceneType = null;
+      showEventText("KICK OFF!");
+      
+      isPlaying = true;
+      requestAnimationFrame(gameLoop);
+    }
+
+    function resetGame() {
+      resOverlay.classList.add('hidden');
+      pickRandomMatch();
+      predictionTag.innerText = "SELECT MATCH & PREDICT";
+      predOverlay.classList.remove('hidden');
+    }
+
+    function updateScoreboard() {
+      homeScoreEl.innerText = homeScore;
+      awayScoreEl.innerText = awayScore;
+      clockEl.innerText = `${Math.floor(matchTime)}'`;
+    }
+
+    function initiatePass(newOwner, passTeam) {
+      if (!ball.owner) return;
+      ball.startX = ball.x;
+      ball.startY = ball.y;
+      ball.targetOwner = newOwner;
+      ball.targetX = newOwner.x;
+      ball.targetY = newOwner.y;
+      ball.progress = 0;
+      ball.owner = null;
+      ball.inTransit = true;
+      showEventText("Passing ball...", passTeam === 'HOME' ? "#fca5a5" : "#93c5fd");
+    }
+
+    let actionCooldown = 0;
+
+    function updateMatchSimulation() {
+      if (cutsceneType) {
+        cutsceneProgress += 0.015;
+        if (cutsceneProgress >= 1.0) {
+          cutsceneType = null;
+        }
+        return;
+      }
+
+      for (let fc of forcedCornersScheduled) {
+        if (!fc.triggered && Math.floor(matchTime) >= fc.minute) {
+          fc.triggered = true;
+          cutsceneType = 'CORNER';
+          cutsceneProgress = 0;
+          cutsceneTargetTeam = fc.team;
+          showEventText("CORNER KICK!", "#38bdf8");
+          ball.owner = null;
+          ball.inTransit = false;
+
+          setTimeout(() => {
+            if (Math.random() < 0.28) {
+              if (fc.team === 'HOME') homeScore++;
+              else awayScore++;
+              updateScoreboard();
+              showEventText("GOAL FROM CORNER!", fc.team === 'HOME' ? "#ef4444" : "#3b82f6");
+            } else {
+              showEventText("Cleared from the box!", "#ffffff");
+            }
+            ball.owner = fc.team === 'HOME' ? awayPlayers[6] : homePlayers[6];
+            ball.inTransit = false;
+          }, 3500);
+          return;
+        }
+      }
+
+      actionCooldown++;
+
+      const isHomeTeamAttacking = (ball.owner && homePlayers.includes(ball.owner)) || (ball.inTransit && ball.targetOwner && homePlayers.includes(ball.targetOwner));
+      const isAwayTeamAttacking = (ball.owner && awayPlayers.includes(ball.owner)) || (ball.inTransit && ball.targetOwner && awayPlayers.includes(ball.targetOwner));
+
+      homePlayers.forEach((p, idx) => {
+        let targetX = p.baseX + Math.sin(matchTime + idx) * 8;
+        let targetY = p.baseY + Math.cos(matchTime + idx) * 8;
+
+        if (p.role === 'FWD') {
+          targetX = isHomeTeamAttacking ? 250 + Math.sin(matchTime) * 10 : p.baseX + 25;
+        } else if (p.role === 'MID') {
+          targetX = isHomeTeamAttacking ? p.baseX + 35 : (isAwayTeamAttacking ? p.baseX - 20 : p.baseX);
+        } else if (p.role === 'DEF') {
+          targetX = isHomeTeamAttacking ? p.baseX + 15 : (isAwayTeamAttacking ? p.baseX - 20 : p.baseX);
+        }
+
+        p.x += (targetX - p.x) * 0.02;
+        p.y += (targetY - p.y) * 0.02;
+      });
+
+      awayPlayers.forEach((p, idx) => {
+        let targetX = p.baseX + Math.sin(matchTime + idx) * 8;
+        let targetY = p.baseY + Math.cos(matchTime + idx) * 8;
+
+        if (p.role === 'FWD') {
+          targetX = isAwayTeamAttacking ? 90 + Math.sin(matchTime) * 10 : p.baseX - 25;
+        } else if (p.role === 'MID') {
+          targetX = isAwayTeamAttacking ? p.baseX - 35 : (isHomeTeamAttacking ? p.baseX + 20 : p.baseX);
+        } else if (p.role === 'DEF') {
+          targetX = isAwayTeamAttacking ? p.baseX - 15 : (isHomeTeamAttacking ? p.baseX + 20 : p.baseX);
+        }
+
+        p.x += (targetX - p.x) * 0.02;
+        p.y += (targetY - p.y) * 0.02;
+      });
+
+      if (ball.owner) {
+        let pushDirX = homePlayers.includes(ball.owner) ? 1 : -1;
+        ball.x = ball.owner.x + (7 * pushDirX);
+        ball.y = ball.owner.y;
+
+        if (actionCooldown > 180) {
+          actionCooldown = 0;
+
+          if (isHomeTeamAttacking) {
+            if (ball.owner.x > 250) {
+              const eventRoll = Math.random();
+
+              if (eventRoll < 0.04) {
+                cutsceneType = 'PENALTY';
+                cutsceneProgress = 0;
+                cutsceneTargetTeam = 'HOME';
+                showEventText("PENALTY KICK!", "#fde047");
+                ball.owner = null;
+                ball.inTransit = false;
+
+                setTimeout(() => {
+                  if (Math.random() < 0.60) {
+                    homeScore++;
+                    updateScoreboard();
+                    showEventText("PENALTY SCORED!", "#ef4444");
+                  } else {
+                    showEventText("Penalty Saved!", "#ffffff");
+                  }
+                  ball.owner = awayPlayers[6];
+                  ball.inTransit = false;
+                }, 3500);
+
+              } else if (eventRoll < 0.15) {
+                cutsceneType = 'CORNER';
+                cutsceneProgress = 0;
+                cutsceneTargetTeam = 'HOME';
+                showEventText("CORNER KICK!", "#38bdf8");
+                ball.owner = null;
+                ball.inTransit = false;
+
+                setTimeout(() => {
+                  if (Math.random() < 0.28) {
+                    homeScore++;
+                    updateScoreboard();
+                    showEventText("GOAL FROM CORNER!", "#ef4444");
+                  } else {
+                    showEventText("Cleared from the box!", "#ffffff");
+                  }
+                  ball.owner = awayPlayers[6];
+                  ball.inTransit = false;
+                }, 3500);
+
+              } else {
+                showEventText(`${currentHomeTeam.name} shoots on target!`, "#ef4444");
+                ball.owner = null;
+                ball.inTransit = false;
+                cutsceneType = 'GOAL_SHOT';
+                cutsceneProgress = 0;
+                cutsceneTargetTeam = 'HOME';
+
+                setTimeout(() => {
+                  if (Math.random() < 0.52) {
+                    homeScore++;
+                    updateScoreboard();
+                    showEventText(`GOAL!`, "#ef4444");
+                  } else {
+                    showEventText("Brilliant goalkeeper save!", "#ffffff");
+                  }
+                  ball.owner = awayPlayers[6];
+                  ball.inTransit = false;
+                }, 2000);
+              }
+            } else {
+              const forwardTeammates = homePlayers.filter(p => p.x > ball.owner.x);
+              let nextReceiver = forwardTeammates.length > 0 ? forwardTeammates[Math.floor(Math.random() * forwardTeammates.length)] : homePlayers[8];
+              initiatePass(nextReceiver, 'HOME');
+            }
+
+          } else if (isAwayTeamAttacking) {
+            if (ball.owner.x < 90) {
+              const eventRoll = Math.random();
+
+              if (eventRoll < 0.04) {
+                cutsceneType = 'PENALTY';
+                cutsceneProgress = 0;
+                cutsceneTargetTeam = 'AWAY';
+                showEventText("PENALTY KICK!", "#fde047");
+                ball.owner = null;
+                ball.inTransit = false;
+
+                setTimeout(() => {
+                  if (Math.random() < 0.60) {
+                    awayScore++;
+                    updateScoreboard();
+                    showEventText("PENALTY SCORED!", "#3b82f6");
+                  } else {
+                    showEventText("Penalty Saved!", "#ffffff");
+                  }
+                  ball.owner = homePlayers[6];
+                  ball.inTransit = false;
+                }, 3500);
+
+              } else if (eventRoll < 0.15) {
+                cutsceneType = 'CORNER';
+                cutsceneProgress = 0;
+                cutsceneTargetTeam = 'AWAY';
+                showEventText("CORNER KICK!", "#38bdf8");
+                ball.owner = null;
+                ball.inTransit = false;
+
+                setTimeout(() => {
+                  if (Math.random() < 0.28) {
+                    awayScore++;
+                    updateScoreboard();
+                    showEventText("GOAL FROM CORNER!", "#3b82f6");
+                  } else {
+                    showEventText("Cleared from the box!", "#ffffff");
+                  }
+                  ball.owner = homePlayers[6];
+                  ball.inTransit = false;
+                }, 3500);
+
+              } else {
+                showEventText(`${currentAwayTeam.name} shoots on target!`, "#3b82f6");
+                ball.owner = null;
+                ball.inTransit = false;
+                cutsceneType = 'GOAL_SHOT';
+                cutsceneProgress = 0;
+                cutsceneTargetTeam = 'AWAY';
+
+                setTimeout(() => {
+                  if (Math.random() < 0.52) {
+                    awayScore++;
+                    updateScoreboard();
+                    showEventText(`GOAL!`, "#3b82f6");
+                  } else {
+                    showEventText("Safe catch by Goalie!", "#ffffff");
+                  }
+                  ball.owner = homePlayers[6];
+                  ball.inTransit = false;
+                }, 2000);
+              }
+            } else {
+              const forwardTeammates = awayPlayers.filter(p => p.x < ball.owner.x);
+              let nextReceiver = forwardTeammates.length > 0 ? forwardTeammates[Math.floor(Math.random() * forwardTeammates.length)] : awayPlayers[8];
+              initiatePass(nextReceiver, 'AWAY');
+            }
+          }
+        }
+      } else if (ball.inTransit) {
+        ball.progress += ball.speed;
+        ball.x = ball.startX + (ball.targetX - ball.startX) * ball.progress;
+        ball.y = ball.startY + (ball.targetY - ball.startY) * ball.progress;
+
+        let passingTeamIsHome = ball.targetOwner && homePlayers.includes(ball.targetOwner);
+        let opposingPlayers = passingTeamIsHome ? awayPlayers : homePlayers;
+
+        let intercepted = false;
+        for (let opp of opposingPlayers) {
+          let distToBall = Math.hypot(opp.x - ball.x, opp.y - ball.y);
+          if (distToBall < 14) {
+            // Added 40% dribble/dodge chance: attacker beats the intercepter successfully!
+            if (Math.random() < 0.40) {
+              showEventText("Dribbled past defender!", "#fde047");
+              continue; 
+            }
+            intercepted = true;
+            ball.owner = opp;
+            ball.inTransit = false;
+            showEventText("INTERCEPTION!", "#fde047");
+            break;
+          }
+        }
+
+        if (!intercepted && ball.progress >= 1.0) {
+          if (ball.targetOwner) {
+            ball.owner = ball.targetOwner;
+            ball.targetOwner = null;
+          }
+          ball.inTransit = false;
+        }
+      }
+    }
+
+    function finishMatch() {
+      isPlaying = false;
+      clockEl.innerText = "FT";
+      showEventText("FULL TIME");
+
+      let actualOutcome = "DRAW";
+      if (homeScore > awayScore) actualOutcome = "HOME";
+      if (awayScore > homeScore) actualOutcome = "AWAY";
+
+      if (predictedOutcome === actualOutcome) {
+        userStats.scorePoints += 1;
+      }
+
+      setTimeout(() => {
+        resOverlay.classList.remove('hidden');
+        if (predictedOutcome === actualOutcome) {
+          resTitle.innerText = "🎯 Spot On AI Prediction! (+1 Pt)";
+          resTitle.style.color = "#4ade80";
+          resText.innerText = "Correct prediction! Your points have been updated.";
+          triggerConfetti();
+        } else {
+          resTitle.innerText = "❌ Incorrect Prediction";
+          resTitle.style.color = "#ef4444";
+          let winnerName = actualOutcome === 'HOME' ? currentHomeTeam.name : actualOutcome === 'AWAY' ? currentAwayTeam.name : "Draw";
+          resText.innerText = `The match ended in a ${actualOutcome === 'DRAW' ? '0-0 / Score Draw' : winnerName + ' Win'}.`;
+        }
+        updateScoreDisplay();
+      }, 1000);
+    }
+
+    function drawPitch() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath(); ctx.moveTo(170, 0); ctx.lineTo(170, 220); ctx.stroke();
+      ctx.beginPath(); ctx.arc(170, 110, 30, 0, Math.PI * 2); ctx.stroke();
+      
+      ctx.strokeRect(-5, 80, 15, 60);  
+      ctx.strokeRect(330, 80, 15, 60); 
+    }
+
+    function drawCutscenes() {
+      ctx.save();
+      ctx.fillStyle = "#0f2e1b";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (cutsceneType === 'PENALTY') {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(170, 180); ctx.lineTo(120, 70);
+        ctx.moveTo(170, 180); ctx.lineTo(220, 70);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(90, 50, 160, 90);
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.lineWidth = 1;
+        for (let gx = 100; gx < 240; gx += 20) {
+          ctx.beginPath(); ctx.moveTo(gx, 50); ctx.lineTo(gx, 140); ctx.stroke();
+        }
+        for (let gy = 60; gy < 140; gy += 15) {
+          ctx.beginPath(); ctx.moveTo(90, gy); ctx.lineTo(250, gy); ctx.stroke();
+        }
+
+        let pX = 170, pY = 145;
+        let targetGoalX = 170 + (Math.sin(cutsceneProgress * 10) * 20);
+        let targetGoalY = 90;
+
+        let curX = pX + (targetGoalX - pX) * cutsceneProgress;
+        let curY = pY + (targetGoalY - pY) * cutsceneProgress;
+
+        ctx.strokeStyle = "rgba(253, 224, 71, 0.6)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(pX, pY); ctx.lineTo(targetGoalX, targetGoalY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(curX, curY, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#000000"; ctx.lineWidth = 1; ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🎥 REFEREE CAM: PENALTY KICK", 170, 25);
+
+      } else if (cutsceneType === 'CORNER') {
+        ctx.fillStyle = "#15803d";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(20, 200); ctx.lineTo(140, 60);
+        ctx.moveTo(320, 200); ctx.lineTo(200, 60);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(120, 45, 100, 45);
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(30, 200, 35, -Math.PI/2, 0); ctx.stroke();
+
+        let startX = 30, startY = 200;
+        let peakX = 170, peakY = 80;
+
+        let curX = startX + (peakX - startX) * cutsceneProgress;
+        let curY = startY + (peakY - startY) * cutsceneProgress;
+
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.8)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(100, 120, peakX, peakY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(curX, curY, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#000000"; ctx.lineWidth = 1; ctx.stroke();
+
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath(); ctx.arc(150, 100, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(190, 105, 5, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🎥 REFEREE CAM: CORNER CROSS", 170, 25);
+
+      } else if (cutsceneType === 'GOAL_SHOT') {
+        // Goal Net Close-up view showing the ball flying into the goal post
+        ctx.fillStyle = "#15803d";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Goal frame & net background
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(70, 35, 200, 130);
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.lineWidth = 1;
+        for (let gx = 85; gx < 260; gx += 15) {
+          ctx.beginPath(); ctx.moveTo(gx, 35); ctx.lineTo(gx, 165); ctx.stroke();
+        }
+        for (let gy = 50; gy < 165; gy += 15) {
+          ctx.beginPath(); ctx.moveTo(70, gy); ctx.lineTo(270, gy); ctx.stroke();
+        }
+
+        let isHomeShooting = (cutsceneTargetTeam === 'HOME');
+        let startX = isHomeShooting ? 40 : 300;
+        let startY = 180;
+        let targetX = 170 + (Math.random() * 60 - 30);
+        let targetY = 90 + (Math.random() * 40 - 20);
+
+        let curX = startX + (targetX - startX) * cutsceneProgress;
+        let curY = startY + (targetY - startY) * cutsceneProgress;
+
+        // Trajectory line
+        ctx.strokeStyle = "rgba(253, 224, 71, 0.7)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(targetX, targetY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Goalkeeper movement reaction
+        let keeperX = 170 + Math.sin(cutsceneProgress * Math.PI * 2) * 25;
+        ctx.fillStyle = isHomeShooting ? "#3b82f6" : "#ef4444";
+        ctx.beginPath(); ctx.arc(keeperX, 100, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+
+        // Ball animation
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(curX, curY, 4.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#000000"; ctx.lineWidth = 1; ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`🎥 ${cutsceneTargetTeam} SHOT ON GOAL!`, 170, 22);
+      }
+
+      ctx.restore();
+    }
+
+    function openLeaderboard() {
+      let boardData = [
+        { rank: 1, name: "ProPredictor99", pts: 14 },
+        { rank: 2, name: "GoalMaster", pts: 12 },
+        { rank: 3, name: "TacticalGuru", pts: 9 },
+        { rank: 4, name: "You (Current)", pts: userStats.scorePoints },
+        { rank: 5, name: "StrikerKing", pts: 6 }
+      ];
+      boardData.sort((a, b) => b.pts - a.pts);
+
+      let html = '';
+      boardData.forEach((item, index) => {
+        html += `<div class="leaderboard-item"><span>#${index + 1} ${item.name}</span><strong>${item.pts} pts</strong></div>`;
+      });
+      leaderboardContent.innerHTML = html;
+      leaderboardOverlay.classList.remove('hidden');
+    }
+
+    function closeLeaderboard() {
+      leaderboardOverlay.classList.add('hidden');
+    }
+
+    function gameLoop() {
+      if (!isPlaying) return;
+
+      matchTime += matchSpeed;
+      updateScoreboard();
+
+      if (matchTime >= 90) {
+        matchTime = 90;
+        finishMatch();
+      } else {
+        updateMatchSimulation();
+      }
+
+      drawPitch();
+
+      if (cutsceneType) {
+        drawCutscenes();
+      } else {
+        ctx.fillStyle = "#ef4444";
+        homePlayers.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        });
+
+        ctx.fillStyle = "#3b82f6";
+        awayPlayers.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        });
+
+        if (ball.inTransit) {
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(ball.startX, ball.startY);
+          ctx.lineTo(ball.x, ball.y);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      if (eventTextAlpha > 0) {
+        ctx.fillStyle = eventTextColor;
+        ctx.font = "bold 13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(currentEventText, 170, 22);
+        eventTextAlpha -= 0.008;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    updateScoreDisplay();
+    pickRandomMatch();
+    drawPitch();
+  </script>
+</body>
+</html>

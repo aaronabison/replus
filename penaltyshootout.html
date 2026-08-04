@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Swipe Penalty Shootout</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 340px;
+      margin-bottom: 12px;
+      padding: 8px 18px;
+      background-color: #1e293b;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #score-display {
+      font-size: 18px;
+      font-weight: bold;
+      color: #22c55e;
+    }
+
+    #round-display {
+      font-size: 18px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    #game-container {
+      position: relative;
+      width: 340px;
+      height: 380px;
+      background-color: #15803d;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 4px solid #166534;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #swipe-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: #fde047;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #completion-card {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #1e293b;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 10;
+    }
+
+    #completion-card.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #completion-card h2 {
+      margin: 0 0 10px 0;
+      color: #38bdf8;
+      font-size: 24px;
+    }
+
+    #completion-card p.result-text {
+      font-size: 18px;
+      color: #f8fafc;
+      margin: 10px 0;
+    }
+
+    #completion-card span.highlight {
+      color: #22c55e;
+      font-weight: bold;
+      font-size: 28px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="status-bar">
+    <div id="round-display">Shot: 1 / 5</div>
+    <div id="score-display">Goals: 0</div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="340" height="380"></canvas>
+    <div id="swipe-hint">👆 SWIPE UP TO SHOOT</div>
+
+    <div id="completion-card">
+      <h2>⚽ Shootout Complete!</h2>
+      <p class="result-text">Final Score: <br><span id="final-goals" class="highlight">0 / 5</span> Goals</p>
+      <p style="color: #94a3b8; margin-top: 15px;">Come back tomorrow for a new challenge!</p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreDisplay = document.getElementById('score-display');
+    const roundDisplay = document.getElementById('round-display');
+    const swipeHint = document.getElementById('swipe-hint');
+    const completionCard = document.getElementById('completion-card');
+    const finalGoalsDisplay = document.getElementById('final-goals');
+
+    const TOTAL_SHOTS = 5;
+    let currentShot = 1;
+    let goalsScored = 0;
+    let isAnimating = false;
+    let isGameOver = false;
+    let audioCtx = null;
+
+    // Swipe Tracking
+    let touchStart = null;
+    let swipeLine = null;
+
+    // Dimensions & Coordinates
+    const GOAL = { left: 45, right: 295, top: 40, bottom: 140 };
+    
+    let ball = {
+      x: 170, y: 320,
+      radius: 14,
+      startX: 170, startY: 320,
+      targetX: 170, targetY: 90,
+      arcHeight: 0,
+      progress: 0
+    };
+
+    let keeper = {
+      x: 170, y: 110,
+      startX: 170, startY: 110,
+      targetX: 170, targetY: 110,
+      armAngle: 0
+    };
+
+    let currentBanner = null;
+
+    function playSound(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        if (type === 'kick') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        } else if (type === 'goal') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        } else if (type === 'save') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(130, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+        }
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+
+      if (navigator.vibrate) {
+        navigator.vibrate(type === 'goal' ? [50, 50, 100] : 30);
+      }
+    }
+
+    function triggerPlentyConfetti() {
+      if (typeof confetti !== 'function') return;
+      const duration = 2.5 * 1000;
+      const animationEnd = Date.now() + duration;
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const particleCount = 40;
+        confetti({ particleCount, angle: 60, spread: 70, origin: { x: 0, y: 0.6 } });
+        confetti({ particleCount, angle: 120, spread: 70, origin: { x: 1, y: 0.6 } });
+      }, 250);
+    }
+
+    // Handle Swipe Gestures
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isAnimating || isGameOver) return;
+      const rect = canvas.getBoundingClientRect();
+      touchStart = { x: e.clientX - rect.left, y: e.clientY - rect.top, time: Date.now() };
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!touchStart || isAnimating || isGameOver) return;
+      const rect = canvas.getBoundingClientRect();
+      swipeLine = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      render();
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      if (!touchStart || isAnimating || isGameOver) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const touchEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top, time: Date.now() };
+
+      const dx = touchEnd.x - touchStart.x;
+      const dy = touchEnd.y - touchStart.y;
+      const dt = Math.max(1, touchEnd.time - touchStart.time);
+
+      touchStart = null;
+      swipeLine = null;
+
+      if (dy < -20) {
+        processSwipeShot(dx, dy, dt);
+      } else {
+        render();
+      }
+    });
+
+    function processSwipeShot(dx, dy, dt) {
+      isAnimating = true;
+      swipeHint.style.opacity = '0';
+      playSound('kick');
+
+      const power = Math.min(1.8, Math.max(0.8, Math.abs(dy) / dt * 10));
+      ball.targetX = ball.startX + (dx * 1.8);
+      ball.targetY = Math.max(20, ball.startY + (dy * 1.3));
+      ball.arcHeight = Math.min(40, Math.abs(dy) * 0.15 * power);
+      ball.progress = 0;
+
+      const keeperOptions = [
+        { x: GOAL.left + 20, y: GOAL.top + 30 },
+        { x: GOAL.right - 20, y: GOAL.top + 30 },
+        { x: 170, y: GOAL.bottom - 20 },
+        { x: GOAL.left + 30, y: GOAL.bottom - 10 },
+        { x: GOAL.right - 30, y: GOAL.bottom - 10 }
+      ];
+
+      const chosenDive = keeperOptions[Math.floor(Math.random() * keeperOptions.length)];
+      keeper.targetX = chosenDive.x;
+      keeper.targetY = chosenDive.y;
+
+      const isInsideGoal = (
+        ball.targetX >= GOAL.left &&
+        ball.targetX <= GOAL.right &&
+        ball.targetY >= GOAL.top &&
+        ball.targetY <= GOAL.bottom
+      );
+
+      const isSaved = isInsideGoal && (
+        Math.hypot(ball.targetX - keeper.targetX, ball.targetY - keeper.targetY) < 45
+      );
+
+      animateShot(isInsideGoal, isSaved);
+    }
+
+    function animateShot(isInsideGoal, isSaved) {
+      ball.progress += 0.04;
+
+      const curX = ball.startX + (ball.targetX - ball.startX) * ball.progress;
+      const curY = ball.startY + (ball.targetY - ball.startY) * ball.progress;
+      
+      const arc = Math.sin(ball.progress * Math.PI) * ball.arcHeight;
+      ball.x = curX;
+      ball.y = curY - arc;
+      ball.radius = Math.max(6, 14 - 8 * ball.progress);
+
+      keeper.x = keeper.startX + (keeper.targetX - keeper.startX) * ball.progress;
+      keeper.y = keeper.startY + (keeper.targetY - keeper.startY) * ball.progress;
+
+      render();
+
+      if (ball.progress < 1) {
+        requestAnimationFrame(() => animateShot(isInsideGoal, isSaved));
+      } else {
+        if (!isInsideGoal) {
+          playSound('save');
+          currentBanner = { text: "MISS!", color: "#ef4444" };
+        } else if (isSaved) {
+          playSound('save');
+          currentBanner = { text: "SAVED!", color: "#f59e0b" };
+        } else {
+          playSound('goal');
+          goalsScored++;
+          currentBanner = { text: "GOAL!", color: "#22c55e" };
+          triggerPlentyConfetti();
+        }
+
+        updateUI();
+
+        setTimeout(() => {
+          resetForNextShot();
+        }, 1200);
+      }
+    }
+
+    function resetForNextShot() {
+      currentShot++;
+      currentBanner = null;
+
+      if (currentShot > TOTAL_SHOTS) {
+        endGame();
+        return;
+      }
+
+      ball.x = ball.startX;
+      ball.y = ball.startY;
+      ball.radius = 14;
+
+      keeper.x = keeper.startX;
+      keeper.y = keeper.startY;
+
+      isAnimating = false;
+      swipeHint.style.opacity = '1';
+      updateUI();
+      render();
+    }
+
+    function updateUI() {
+      roundDisplay.innerText = `Shot: ${Math.min(currentShot, TOTAL_SHOTS)} / ${TOTAL_SHOTS}`;
+      scoreDisplay.innerText = `Goals: ${goalsScored}`;
+    }
+
+    // Custom Detailed Goalkeeper Character Drawing
+    function drawGoalkeeperCharacter(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      const dx = x - 170;
+      const angle = (dx / 120) * (Math.PI / 6); // Lean body during dives
+      ctx.rotate(angle);
+
+      // Shadow
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.beginPath();
+      ctx.ellipse(0, 25, 18, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Legs
+      ctx.fillStyle = "#1e293b"; // Socks/Legs
+      ctx.fillRect(-8, 5, 5, 20);
+      ctx.fillRect(3, 5, 5, 20);
+
+      // Cleats
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(-10, 22, 7, 4);
+      ctx.fillRect(3, 22, 7, 4);
+
+      // Shorts
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(-10, -5, 20, 12);
+
+      // Jersey (Goalkeeper Neon Yellow)
+      ctx.fillStyle = "#eab308";
+      ctx.fillRect(-12, -25, 24, 22);
+
+      // Outstretched Arms & Keeper Gloves
+      ctx.fillStyle = "#eab308";
+      ctx.fillRect(-22, -23, 10, 6); // Left Arm
+      ctx.fillRect(12, -23, 10, 6);  // Right Arm
+
+      // Gloves (Neon Orange)
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.arc(-24, -20, 5, 0, Math.PI * 2); // Left Glove
+      ctx.arc(24, -20, 5, 0, Math.PI * 2);  // Right Glove
+      ctx.fill();
+
+      // Head / Skin
+      ctx.fillStyle = "#fbcfe8";
+      ctx.beginPath();
+      ctx.arc(0, -32, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = "#475569";
+      ctx.beginPath();
+      ctx.arc(0, -35, 8, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Pitch Lines
+      ctx.fillStyle = "#16a34a";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.moveTo(10, 180);
+      ctx.lineTo(330, 180);
+      ctx.stroke();
+
+      // Goal Net
+      ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.fillRect(GOAL.left, GOAL.top, GOAL.right - GOAL.left, GOAL.bottom - GOAL.top);
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.lineWidth = 1;
+      for (let x = GOAL.left; x <= GOAL.right; x += 15) {
+        ctx.beginPath();
+        ctx.moveTo(x, GOAL.top);
+        ctx.lineTo(x, GOAL.bottom);
+        ctx.stroke();
+      }
+
+      // Goal Frame
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 6;
+      ctx.strokeRect(GOAL.left, GOAL.top, GOAL.right - GOAL.left, GOAL.bottom - GOAL.top);
+
+      // Penalty Spot
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(170, 320, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Swipe Guide Line
+      if (swipeLine && touchStart) {
+        ctx.strokeStyle = "rgba(253, 224, 71, 0.8)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(ball.startX, ball.startY);
+        ctx.lineTo(swipeLine.x, swipeLine.y);
+        ctx.stroke();
+      }
+
+      // Render Animated Person Goalkeeper
+      drawGoalkeeperCharacter(keeper.x, keeper.y);
+
+      // Ball Shadow
+      ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.beginPath();
+      ctx.ellipse(ball.x, ball.y + ball.radius * 0.8, ball.radius, ball.radius * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ball Render
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Outcome Text
+      if (currentBanner) {
+        ctx.font = "900 36px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = currentBanner.color;
+        ctx.textAlign = "center";
+        ctx.fillText(currentBanner.text, 170, 230);
+      }
+    }
+
+    function endGame() {
+      isGameOver = true;
+      swipeHint.style.display = 'none';
+
+      finalGoalsDisplay.innerText = `${goalsScored} / ${TOTAL_SHOTS}`;
+
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: "GAME_OVER",
+          status: "COMPLETE",
+          goals: goalsScored,
+          totalShots: TOTAL_SHOTS
+        }));
+      }
+
+      setTimeout(() => {
+        canvas.style.visibility = 'hidden';
+        completionCard.classList.add('active');
+      }, 600);
+    }
+
+    render();
+  </script>
+</body>
+</html>

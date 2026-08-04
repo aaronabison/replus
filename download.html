@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download Replus</title>
+<meta name="description" content="Get Replus on iOS, Android and PC, or scan the QR code to grab the link on your device.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo"><button style="background-color:transparent; border-color:transparent; display:; gap:5px"><img src="replus-logo.jpg" style="width:30px; height:30px; border-radius:8px;">Replus</button></a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="team.html">Team</a>
+      <a href="download.html" aria-current="page">Download</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="download.html" class="btn btn-primary nav-cta">Get Replus</a>
+    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false"><span class="menu-plus"></span></button>
+  </div>
+</header>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="about.html">About</a>
+  <a href="team.html">Team</a>
+  <a href="download.html">Download</a>
+  <a href="contact.html">Contact</a>
+  <p class="mobile-nav-foot">Add the people who add to you.</p>
+</div>
+
+<main>
+
+  <section class="page-hero" style="padding-bottom: 0;">
+    <canvas class="plus-field" data-gap="50"></canvas>
+    <div class="wrap">
+      <span class="eyebrow">Download</span>
+      <h1 style="max-width: 22ch;">Your Socials are waiting. So is the app.</h1>
+      <p class="lede">Available for iPhone, Android, and PC. Takes about a minute to set up your Replus account.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap download-grid reveal">
+      <div>
+        <div class="store-row">
+          <a href="#" class="btn store-btn interactive">
+          <img src="appstore.png" style="width:150px; height:auto;">
+          </a>
+          <a href="#" class="btn store-btn interactive">
+          <img src="playstore2.jpg" style="width:150px; height:auto;">
+          </a>
+          <a href="#" class="btn store-btn interactive">
+            <span class="store-icon">⌘</span>
+            <span><small>Get it on </small><strong>Microsoft Store</strong></span>
+          </a>
+          <a href="#" class="btn store-btn interactive">
+            <span class="store-icon">▷</span>
+            <span><small>Download</small><strong>Version for PCs</strong></span>
+          </a>
+        </div>
+
+        <div class="qr-block">
+          <div id="qrcode"></div>
+          <p class="qr-copy">Scan with your phone's camera to open the download link. (Placeholder URL — point this at your real listing.)</p>
+        </div>
+      </div>
+
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-screen">
+
+            <div class="screen-slide is-active">
+              <div style="margin:10px; align-items:center; display:flex; justify-content:center;">
+              <img src="replus-logo-black.jpg" style="width:60px; height:60px; border-radius:8px;">
+            </div>
+              <img src="01.png" alt="Lifestyle" class="screen-img">
+              <div class="screen-overlay">
+                <div class="screen-label">Built for Your Daily Rhythm</div>
+                <p class="screen-title">Take control wherever life takes you.</p>
+              </div>
+            </div>
+            <div class="screen-slide">
+              <div style="margin:10px; align-items:center; display:flex; justify-content:center;">
+              <img src="replus-logo-black.jpg" style="width:60px; height:60px; border-radius:8px;">
+            </div>
+            <img src="02.png" alt="Inclusive Interests" class="screen-img">
+              <div class="screen-overlay">
+                <div class="screen-label">We Accept Different Interests in People</div>
+                <p class="screen-title">Every passion has its place. Every form of social life has its space.</p>
+              </div>
+            </div>
+            <div class="screen-slide">
+              <div style="margin:10px; align-items:center; display:flex; justify-content:center;">
+              <img src="replus-logo-black.jpg" style="width:60px; height:60px; border-radius:8px;">
+            </div>
+            <img src="03.png" alt="Replus Icons" class="screen-img">
+              <div class="screen-overlay">
+                <div class="screen-label">Replus stands out</div>
+                <p class="screen-title">Unique choice. Individual focus.</p>
+                
+              </div>
+            </div>
+            <div class="phone-dots" style="position:absolute; bottom:26px; left:0; right:0;">
+              <span class="phone-dot"></span><span class="phone-dot"></span><span class="phone-dot"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-alt">
+    <div class="wrap section-head reveal">
+      <span class="eyebrow">Getting started</span>
+      <h2>Three steps, then you're in.</h2>
+    </div>
+    <div class="wrap reveal">
+      <div class="steps-row">
+        <div class="step-card">
+          <span class="step-num">Step 1</span>
+          <h3>Download</h3>
+          <p>Grab Replus from the App Store or Google Play — or scan the QR code above.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">Step 2</span>
+          <h3>Start connecting & socializing</h3>
+          <p>We have all the tools to make your experience with the app a unique 5-star.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">Step 3</span>
+          <h3>Start replussing</h3>
+          <p>Share something small. See what a social impression feels like when it's from someone who means it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <button style="background-color:transparent; border-color:transparent; display:flex; gap:5px"><img src="replus-logo-black.jpg" style="width:30px; height:30px; border-radius:8px;"><span class="logo">Replus</span></button>
+        <p>A social network built as a complete social ecosystem.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="download.html">Download</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="team.html">Team</a>
+          <a href="aaron.html">Our Founder</a>
+          <a href="contact.html">Contact</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Replus Stacks.</span>
+      <div class="footer-social">
+        <a href="#">Twitter</a>
+        <a href="#">Instagram</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
