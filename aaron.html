@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+
 </head>
 <body>
 
@@ -166,7 +167,11 @@
         </div>
         <a href="contact.html" class="btn btn-primary">Contact</a>
       </div>
+      
+      <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="medium" data-theme="dark" data-type="VERTICAL" data-vanity="aabison" data-version="v1"><a class="badge-base__link LI-simple-link" href="https://ng.linkedin.com/in/aabison?trk=profile-badge">Aaron Abison</a></div>
+              
     </div>
+
   </section>
 
 </main>
@@ -205,5 +210,13 @@
 </footer>
 
 <script src="script.js"></script>
+<script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"></script>
+<script>
+  window.addEventListener('load', function() {
+    if (window.IN && window.IN.parse) {
+      window.IN.parse();
+    }
+  });
+</script>
 </body>
 </html>
