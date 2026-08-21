@@ -9,6 +9,45 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+  /* Custom LinkedIn badge — scoped so it doesn't conflict with styles.css */
+  .li-badge-wrap { display: flex; justify-content: center; margin-top: 32px; }
+  .li-badge-card {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  }
+  .li-badge-header {
+    background: #38434f;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+  }
+  .li-badge-header .li-logo-img { height: 20px; width: auto; display: block; }
+  .li-badge-body { background: #000; padding: 22px 18px 24px; }
+  .li-badge-photo {
+    width: 64px; height: 64px; border-radius: 50%;
+    object-fit: cover; display: block; margin-bottom: 14px;
+  }
+  .li-badge-name { color: #fff; font-size: 19px; font-weight: 700; margin: 0 0 6px; }
+  .li-badge-role { color: #e6e9ec; font-size: 14px; line-height: 1.4; margin: 0 0 4px; }
+  .li-badge-school { color: #9aa2a9; font-size: 13px; margin: 0 0 18px; }
+  .li-badge-btn {
+    display: inline-block;
+    padding: 8px 22px;
+    border: 1.5px solid #fff;
+    border-radius: 20px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .li-badge-btn:hover { background: #fff; color: #000; }
+</style>
 
 </head>
 <body>
@@ -167,9 +206,22 @@
         </div>
         <a href="contact.html" class="btn btn-primary">Contact</a>
       </div>
-      
-      <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="medium" data-theme="dark" data-type="VERTICAL" data-vanity="aabison" data-version="v1"><a class="badge-base__link LI-simple-link" href="https://ng.linkedin.com/in/aabison?trk=profile-badge">Aaron Abison</a></div>
-              
+
+      <div class="li-badge-wrap">
+        <div class="li-badge-card">
+          <div class="li-badge-header">
+            <img src="LI-logo.png" alt="LinkedIn" class="li-logo-img">
+          </div>
+          <div class="li-badge-body">
+            <img src="picture.jpg" class="li-badge-photo" alt="Aaron Abison">
+            <p class="li-badge-name">Aaron Abison</p>
+            <p class="li-badge-role">Founder &amp; CEO of Replus Stacks.</p>
+            <p class="li-badge-school">University of Abuja</p>
+            <a href="#" class="li-badge-btn" target="_blank" rel="noopener">View profile</a>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </section>
@@ -210,13 +262,6 @@
 </footer>
 
 <script src="script.js"></script>
-<script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"></script>
-<script>
-  window.addEventListener('load', function() {
-    if (window.IN && window.IN.parse) {
-      window.IN.parse();
-    }
-  });
-</script>
+
 </body>
 </html>
