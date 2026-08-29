@@ -29,6 +29,7 @@
     initFaq();
     initDownloadPhone();
     initQr();
+    initBrandBadgePicker();
   }
 
   /* ---------------- custom cursor ---------------- */
@@ -293,17 +294,22 @@
       navigate(window.location.href, false);
     });
 
-    function ensureScriptsLoaded(doc) {
-      // Some pages (e.g. download.html) depend on a library <script src>
-      // that sits outside <main>. Since we only splice in <main>, that tag
-      // never reaches the live document on its own — load it here first.
-      const wanted = Array.from(doc.querySelectorAll("script[src]")).map((s) => s.src);
-      const have = new Set(Array.from(document.querySelectorAll("script[src]")).map((s) => s.src));
-      const missing = wanted.filter((src) => !have.has(src));
+    function ensureHeadAssetsLoaded(doc, sourceUrl) {
+      // A page's <head> is never touched by an AJAX swap (we only take
+      // <main>/<header>/#mobileNav from the fetched document). Some pages
+      // (brand.html, aaron.html, index.html) define page-specific CSS in
+      // their own <head><style> block, or depend on an external <script src>
+      // (e.g. download.html's QR library). Without this, those pages render
+      // with their layout/JS-driven pieces completely unstyled or inert when
+      // arrived at via AJAX instead of a full load — pull all of it in here.
+      const tasks = [];
 
-      return Promise.all(
-        missing.map(
-          (src) =>
+      const wantedScripts = Array.from(doc.querySelectorAll("script[src]")).map((s) => s.src);
+      const haveScripts = new Set(Array.from(document.querySelectorAll("script[src]")).map((s) => s.src));
+      wantedScripts
+        .filter((src) => !haveScripts.has(src))
+        .forEach((src) => {
+          tasks.push(
             new Promise((resolve) => {
               const s = document.createElement("script");
               s.src = src;
@@ -311,8 +317,40 @@
               s.onerror = resolve; // don't block navigation if a library fails
               document.body.appendChild(s);
             })
-        )
-      );
+          );
+        });
+
+      const wantedLinks = Array.from(doc.querySelectorAll('link[rel="stylesheet"][href]')).map((l) => l.href);
+      const haveLinks = new Set(Array.from(document.querySelectorAll('link[rel="stylesheet"][href]')).map((l) => l.href));
+      wantedLinks
+        .filter((href) => !haveLinks.has(href))
+        .forEach((href) => {
+          tasks.push(
+            new Promise((resolve) => {
+              const l = document.createElement("link");
+              l.rel = "stylesheet";
+              l.href = href;
+              l.onload = resolve;
+              l.onerror = resolve;
+              document.head.appendChild(l);
+            })
+          );
+        });
+
+      // Inline <style> blocks are synchronous — no need to wait for them,
+      // just make sure each unique one (keyed by source page + position)
+      // only ever gets injected once, even if you visit the page repeatedly.
+      Array.from(doc.querySelectorAll("head style")).forEach((styleEl, i) => {
+        const marker = encodeURIComponent(sourceUrl) + "-" + i;
+        if (!document.querySelector('style[data-nav-injected="' + marker + '"]')) {
+          const clone = document.createElement("style");
+          clone.setAttribute("data-nav-injected", marker);
+          clone.textContent = styleEl.textContent;
+          document.head.appendChild(clone);
+        }
+      });
+
+      return Promise.all(tasks);
     }
 
     function navigate(url, pushState) {
@@ -336,7 +374,7 @@
           const newMobileNav = doc.getElementById("mobileNav");
           const oldMobileNav = document.getElementById("mobileNav");
 
-          return ensureScriptsLoaded(doc).then(() => {
+          return ensureHeadAssetsLoaded(doc, url).then(() => {
             oldMain.innerHTML = newMain.innerHTML;
 
             // Swap the header's content so the destination page's own
@@ -539,5 +577,200 @@
       colorDark: "#000000",
       colorLight: "#ffffff",
     });
+  }
+
+  /* ---------------- brand: badge picker + license-agreement modal ----------------
+     Lives inside <main> on brand.html only. Runs fresh on every visit to that
+     page (including via AJAX navigation) since all its elements are re-created
+     each time <main> is swapped. The one exception is the Escape-key listener,
+     which is bound to `document` and must only ever be added once per session. */
+  function initBrandBadgePicker() {
+    const grid = document.getElementById("badgeGrid");
+    if (!grid) return;
+
+    const BADGES = [
+      { label: "Find us on Replus", slug: "find-us-on-replus" },
+      { label: "Follow us on Replus", slug: "follow-us-on-replus" },
+      { label: "Join us on Replus", slug: "join-us-on-replus" },
+      { label: "Available on Replus", slug: "available-on-replus" },
+      { label: "Now on Replus", slug: "now-on-replus" },
+      { label: "Find me on Replus", slug: "find-me-on-replus" },
+      { label: "Follow me on Replus", slug: "follow-me-on-replus" },
+      { label: "Add me on Replus", slug: "add-me-on-replus" },
+      { label: "Listen on Replus Podcasts", slug: "listen-on-replus-podcasts" },
+      { label: "Read on Replus", slug: "read-on-replus" },
+      { label: "View on Replus Arts", slug: "view-on-replus-arts" },
+      { label: "Join the Circle on Replus", slug: "join-the-circle-on-replus" },
+      { label: "Share on Replus", slug: "share-on-replus" },
+      { label: "Scan to join Replus", slug: "scan-to-join-replus" },
+      { label: "Get Replus", slug: "get-replus" },
+      { label: "Download Replus", slug: "download-replus" },
+      { label: "Powered by Replus", slug: "powered-by-replus" },
+      { label: "Message me on Replus", slug: "message-me-on-replus" },
+    ];
+
+    const state = { shape: "pill", theme: "light" };
+    let pendingDownload = null;
+    let modalMode = "gate";
+
+    function renderGrid() {
+      grid.innerHTML = "";
+      BADGES.forEach((b) => {
+        const file = "brandsimg/" + state.shape + "-" + state.theme + "-" + b.slug + ".png";
+        const filename = "replus-badge-" + state.shape + "-" + state.theme + "-" + b.slug + ".png";
+        const card = document.createElement("div");
+        card.className = "badge-card" + (state.theme === "dark" ? " is-dark" : "");
+        card.innerHTML =
+          '<div class="badge-card-preview"><img src="' + file + '" alt="' + b.label + " badge, " + state.shape + " shape, " + state.theme + ' theme"></div>' +
+          '<div class="badge-card-foot">' +
+          '<span class="badge-card-label">' + b.label + "</span>" +
+          '<button type="button" class="btn btn-ghost btn-sm js-download-btn" data-file="' + file + '" data-filename="' + filename + '">Download</button>' +
+          "</div>";
+        grid.appendChild(card);
+      });
+    }
+
+    function wireToggle(id, onChange) {
+      const group = document.getElementById(id);
+      if (!group) return;
+      group.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          group.querySelectorAll("button").forEach((b2) => b2.setAttribute("aria-pressed", "false"));
+          btn.setAttribute("aria-pressed", "true");
+          onChange(btn.dataset.value);
+        });
+      });
+    }
+
+    wireToggle("shapeToggle", (v) => { state.shape = v; renderGrid(); });
+    wireToggle("themeToggle", (v) => { state.theme = v; renderGrid(); });
+
+    function triggerDownload(file, filename) {
+      const a = document.createElement("a");
+      a.href = file;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function requestDownload(file, filename) {
+      if (sessionStorage.getItem("replusBrandAgreementAccepted") === "true") {
+        triggerDownload(file, filename);
+        return;
+      }
+      pendingDownload = { file, filename };
+      modalMode = "gate";
+      openModal();
+    }
+
+    function openModal() {
+      const modal = document.getElementById("agreementModal");
+      const body = document.getElementById("agreementBody");
+      const checkbox = document.getElementById("agreeCheckbox");
+      const agreeBtn = document.getElementById("agreeDownloadBtn");
+      const gateFoot = document.getElementById("modalFooterGate");
+      const readFoot = document.getElementById("modalFooterRead");
+      const subhead = document.getElementById("modalSubhead");
+      if (!modal) return;
+
+      modal.classList.add("is-open");
+      body.scrollTop = 0;
+
+      if (modalMode === "gate") {
+        checkbox.checked = false;
+        checkbox.disabled = true;
+        agreeBtn.disabled = true;
+        gateFoot.style.display = "flex";
+        readFoot.style.display = "none";
+        subhead.textContent = "Scroll to the end to enable the checkbox below.";
+      } else {
+        gateFoot.style.display = "none";
+        readFoot.style.display = "flex";
+        subhead.textContent = "Reference copy — no action needed unless you're downloading an asset.";
+      }
+    }
+
+    function closeModal() {
+      const modal = document.getElementById("agreementModal");
+      if (modal) modal.classList.remove("is-open");
+      pendingDownload = null;
+    }
+
+    const agreementBody = document.getElementById("agreementBody");
+    if (agreementBody) {
+      agreementBody.addEventListener("scroll", function () {
+        if (modalMode !== "gate") return;
+        if (this.scrollTop + this.clientHeight >= this.scrollHeight - 8) {
+          const cb = document.getElementById("agreeCheckbox");
+          if (cb) cb.disabled = false;
+        }
+      });
+    }
+
+    const agreeCheckbox = document.getElementById("agreeCheckbox");
+    if (agreeCheckbox) {
+      agreeCheckbox.addEventListener("change", function () {
+        const btn = document.getElementById("agreeDownloadBtn");
+        if (btn) btn.disabled = !this.checked;
+      });
+    }
+
+    const agreeDownloadBtn = document.getElementById("agreeDownloadBtn");
+    if (agreeDownloadBtn) {
+      agreeDownloadBtn.addEventListener("click", () => {
+        sessionStorage.setItem("replusBrandAgreementAccepted", "true");
+        if (pendingDownload) {
+          triggerDownload(pendingDownload.file, pendingDownload.filename);
+          pendingDownload = null;
+        }
+        sessionStorage.setItem("replusBrandAgreementAccepted", "false");
+        closeModal();
+      });
+    }
+
+    const readAgreementLink = document.getElementById("readAgreementLink");
+    if (readAgreementLink) {
+      readAgreementLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        modalMode = "read";
+        openModal();
+      });
+    }
+
+    document.querySelectorAll(".js-modal-close").forEach((btn) => {
+      btn.addEventListener("click", closeModal);
+    });
+
+    const agreementModal = document.getElementById("agreementModal");
+    if (agreementModal) {
+      agreementModal.addEventListener("click", function (e) {
+        if (e.target === this) closeModal();
+      });
+    }
+
+    // Escape-to-close must only ever be bound once per session — this
+    // function itself re-runs every time someone visits brand.html.
+    if (!window.__brandModalEscBound) {
+      window.__brandModalEscBound = true;
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+      });
+    }
+
+    const logoDownloadBtn = document.getElementById("logoDownloadBtn");
+    if (logoDownloadBtn) {
+      logoDownloadBtn.addEventListener("click", () => {
+        requestDownload("brandsimg/replus-logo.png", "brandsimg/replus-logo.png");
+      });
+    }
+
+    grid.addEventListener("click", (e) => {
+      const btn = e.target.closest(".js-download-btn");
+      if (!btn) return;
+      requestDownload(btn.dataset.file, btn.dataset.filename);
+    });
+
+    renderGrid();
   }
 })();
