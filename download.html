@@ -15,13 +15,14 @@
 <header class="site-header">
   <div class="header-inner">
     <a href="index.html" class="logo"><button style="background-color:transparent; border-color:transparent; display:; gap:5px"><img src="replus-logo.jpg" style="width:30px; height:30px; border-radius:8px;">Replus</button></a>
-    <nav class="site-nav" aria-label="Primary">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="team.html">Team</a>
-      <a href="download.html" aria-current="page">Download</a>
-      <a href="contact.html">Contact</a>
-    </nav>
+<nav class="site-nav" aria-label="Primary">
+  <a href="index.html" class="btn-pill-white">Home</a>
+  <a href="about.html" class="btn-pill-white">About</a>
+  <a href="team.html" class="btn-pill-white">Team</a>
+  <a href="brand.html" class="btn-pill-white">Brand</a>
+  <a href="download.html" class="btn-pill-blue">Download</a>
+  <a href="contact.html" class="btn-pill-white">Contact</a>
+</nav>
     <a href="download.html" class="btn btn-primary nav-cta">Get Replus</a>
     <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false"><span class="menu-plus"></span></button>
   </div>
@@ -31,13 +32,42 @@
   <a href="index.html">Home</a>
   <a href="about.html">About</a>
   <a href="team.html">Team</a>
+  <a href="brand.html">Brand</a>
+  <a href="partnership.html">Partnership</a>
+
   <a href="download.html">Download</a>
   <a href="contact.html">Contact</a>
-  <p class="mobile-nav-foot">Add the people who add to you.</p>
+  <p class="mobile-nav-foot">Use the tools that add to you.</p>
 </div>
 
 <main>
-
+<div id="replus-splash" style="
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+">
+  <div style="
+    width: 40px;
+    height: 40px;
+    border: 3px solid #1e90ff;
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  "></div>
+  
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</div>
   <section class="page-hero" style="padding-bottom: 0;">
     <canvas class="plus-field" data-gap="50"></canvas>
     <div class="wrap">
@@ -45,6 +75,7 @@
       <h1 style="max-width: 22ch;">Your plus is waiting. So is the app.</h1>
       <p class="lede">Available for iPhone, Android, and PC. It takes about a minute to set up your Replus account.</p>
     </div>
+    <br><br>
   </section>
 
   <section>
@@ -220,7 +251,7 @@
   <div class="wrap">
     <div class="footer-top">
       <div class="footer-brand">
-        <button style="background-color:transparent; border-color:transparent; display:flex; gap:5px"><img src="replus-logo-black.jpg" style="width:30px; height:30px; border-radius:8px;"><span class="logo">Replus</span></button>
+        <div style="background-color:transparent; border-color:transparent; display:flex; gap:5px"><img src="replus-logo-black.jpg" style="width:30px; height:30px; border-radius:8px;"><span class="logo">Replus</span></div>
         <p>More than a social network — a complete social ecosystem.</p>
       </div>
       <div class="footer-links">
@@ -229,12 +260,15 @@
           <a href="index.html">Home</a>
           <a href="about.html">About</a>
           <a href="download.html">Download</a>
+          <a href="brand.html">Brand Assets</a>
+          <a href="partnership.html">Partnerships</a>
         </div>
         <div class="footer-col">
           <h4>Company</h4>
           <a href="team.html">Team</a>
           <a href="aaron.html">Our Founder</a>
           <a href="contact.html">Contact</a>
+
         </div>
       </div>
     </div>

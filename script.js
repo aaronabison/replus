@@ -9,11 +9,19 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.add("is-ready");
-    initCursor();
+    initCursor();          // once — lives outside <main>
+    initHeader();          // once — lives outside <main>
+    initMobileNav();       // once — lives outside <main>
+    initPageTransitions(); // once — sets up delegated nav + overlay
+    initMainWidgets();     // first run for whatever <main> starts with
+  });
+
+  /* Everything that only exists inside <main> gets re-run after every
+     AJAX page swap. Nothing here binds to <header>/<footer>/mobile-nav,
+     so it's safe to call repeatedly without double-binding anything. */
+  function initMainWidgets() {
+    destroyPlusFields();
     initPlusFields();
-    initHeader();
-    initMobileNav();
-    initPageTransitions();
     initReveal();
     initHomeDemo();
     initFlipCards();
@@ -21,7 +29,7 @@
     initFaq();
     initDownloadPhone();
     initQr();
-  });
+  }
 
   /* ---------------- custom cursor ---------------- */
   function initCursor() {
@@ -72,19 +80,26 @@
       this.dark = canvas.dataset.tone === "dark";
       this.points = [];
       this.pointer = { x: -9999, y: -9999, active: false };
+      this._raf = null;
+
+      this._onResize = () => this.resize();
       this.resize();
-      window.addEventListener("resize", () => this.resize());
+      window.addEventListener("resize", this._onResize);
+
       if (finePointer) {
-        canvas.parentElement.addEventListener("mousemove", (e) => {
+        this._onMove = (e) => {
           const r = canvas.getBoundingClientRect();
           this.pointer.x = e.clientX - r.left;
           this.pointer.y = e.clientY - r.top;
           this.pointer.active = true;
-        });
-        canvas.parentElement.addEventListener("mouseleave", () => { this.pointer.active = false; });
+        };
+        this._onLeave = () => { this.pointer.active = false; };
+        canvas.parentElement.addEventListener("mousemove", this._onMove);
+        canvas.parentElement.addEventListener("mouseleave", this._onLeave);
       }
+
       this.t = 0;
-      if (!reduceMotion) requestAnimationFrame(() => this.tick());
+      if (!reduceMotion) this._raf = requestAnimationFrame(() => this.tick());
       else this.draw();
     }
     resize() {
@@ -113,7 +128,7 @@
     tick() {
       this.t += 0.016;
       this.draw();
-      requestAnimationFrame(() => this.tick());
+      this._raf = requestAnimationFrame(() => this.tick());
     }
     draw() {
       const { ctx, w, h } = this;
@@ -150,49 +165,216 @@
         ctx.restore();
       }
     }
+    destroy() {
+      window.removeEventListener("resize", this._onResize);
+      if (this._onMove) this.canvas.parentElement?.removeEventListener("mousemove", this._onMove);
+      if (this._onLeave) this.canvas.parentElement?.removeEventListener("mouseleave", this._onLeave);
+      if (this._raf) cancelAnimationFrame(this._raf);
+    }
   }
+
+  let plusFieldInstances = [];
   function initPlusFields() {
-    document.querySelectorAll(".plus-field").forEach((c) => new PlusField(c));
+    document.querySelectorAll(".plus-field").forEach((c) => {
+      plusFieldInstances.push(new PlusField(c));
+    });
+  }
+  function destroyPlusFields() {
+    plusFieldInstances.forEach((f) => f.destroy());
+    plusFieldInstances = [];
   }
 
   /* ---------------- header scroll state ---------------- */
   function initHeader() {
-    const header = document.querySelector(".site-header");
-    if (!header) return;
     const onScroll = () => {
-      header.classList.toggle("is-scrolled", window.scrollY > 12);
+      // Query fresh every time — the header node itself gets swapped
+      // during AJAX navigation, so a cached reference would go stale.
+      const header = document.querySelector(".site-header");
+      if (header) header.classList.toggle("is-scrolled", window.scrollY > 12);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.__refreshHeaderScroll = onScroll;
   }
 
   /* ---------------- mobile nav ---------------- */
   function initMobileNav() {
-    const toggle = document.querySelector(".menu-toggle");
-    const nav = document.getElementById("mobileNav");
-    if (!toggle || !nav) return;
-    toggle.addEventListener("click", () => {
-      const open = document.body.classList.toggle("menu-open");
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    nav.querySelectorAll("a").forEach((a) => {
-      a.addEventListener("click", () => document.body.classList.remove("menu-open"));
+    // Delegated on document: the .menu-toggle button lives inside <header>,
+    // which gets its content replaced on every AJAX navigation, so a direct
+    // listener on the button itself would be destroyed after one click.
+    document.addEventListener("click", (e) => {
+      const toggle = e.target.closest(".menu-toggle");
+      if (toggle) {
+        const open = document.body.classList.toggle("menu-open");
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        return;
+      }
+      // Close the mobile menu when any link inside it is tapped
+      if (e.target.closest("#mobileNav a")) {
+        document.body.classList.remove("menu-open");
+      }
     });
   }
 
-  /* ---------------- page transitions ---------------- */
+  /* ---------------- page transitions (AJAX, no full reload) ---------------- */
   function initPageTransitions() {
-    document.querySelectorAll('a[href]').forEach((a) => {
+    let overlay = document.getElementById("page-transition-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "page-transition-overlay";
+      overlay.innerHTML = '<span class="page-transition-spinner"></span>';
+      document.body.appendChild(overlay);
+
+      const style = document.createElement("style");
+      style.textContent = `
+        #page-transition-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9998;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.6);
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity .25s ease;
+        }
+        #page-transition-overlay.is-active {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: all;
+        }
+        .page-transition-spinner {
+          width: 40px; height: 40px;
+          border: 3px solid #1e90ff;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: page-transition-spin .7s linear infinite;
+        }
+        @keyframes page-transition-spin { to { transform: rotate(360deg); } }
+        body.is-transitioning > *:not(#page-transition-overlay) {
+          filter: blur(4px);
+          transition: filter .25s ease;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    let busy = false;
+
+    // ONE delegated listener on document. Works for every link, including
+    // ones inside content swapped in later — never needs re-attaching.
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      const a = e.target.closest("a[href]");
+      if (!a) return;
+      if (a.target === "_blank" || a.hasAttribute("download")) return;
+
       const href = a.getAttribute("href");
-      if (!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("tel:") || a.target === "_blank") return;
-      if (!href.endsWith(".html")) return;
-      a.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (reduceMotion) { window.location.href = href; return; }
-        document.body.classList.add("is-leaving");
-        setTimeout(() => { window.location.href = href; }, 300);
-      });
+      if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+
+      let url;
+      try { url = new URL(href, window.location.href); } catch (_) { return; }
+
+      if (url.origin !== window.location.origin) return;
+      if (!url.pathname.endsWith(".html")) return;
+      if (url.href.split("#")[0] === window.location.href.split("#")[0]) { e.preventDefault(); return; }
+
+      e.preventDefault();
+      if (reduceMotion) { window.location.href = url.href; return; }
+      if (busy) return;
+      navigate(url.href, true);
     });
+
+    window.addEventListener("popstate", () => {
+      navigate(window.location.href, false);
+    });
+
+    function ensureScriptsLoaded(doc) {
+      // Some pages (e.g. download.html) depend on a library <script src>
+      // that sits outside <main>. Since we only splice in <main>, that tag
+      // never reaches the live document on its own — load it here first.
+      const wanted = Array.from(doc.querySelectorAll("script[src]")).map((s) => s.src);
+      const have = new Set(Array.from(document.querySelectorAll("script[src]")).map((s) => s.src));
+      const missing = wanted.filter((src) => !have.has(src));
+
+      return Promise.all(
+        missing.map(
+          (src) =>
+            new Promise((resolve) => {
+              const s = document.createElement("script");
+              s.src = src;
+              s.onload = resolve;
+              s.onerror = resolve; // don't block navigation if a library fails
+              document.body.appendChild(s);
+            })
+        )
+      );
+    }
+
+    function navigate(url, pushState) {
+      busy = true;
+      overlay.classList.add("is-active");
+      document.body.classList.add("is-transitioning");
+
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.text();
+        })
+        .then((html) => {
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const newMain = doc.querySelector("main");
+          const oldMain = document.querySelector("main");
+          if (!newMain || !oldMain) throw new Error("Missing <main>");
+
+          const newHeader = doc.querySelector("header");
+          const oldHeader = document.querySelector("header");
+          const newMobileNav = doc.getElementById("mobileNav");
+          const oldMobileNav = document.getElementById("mobileNav");
+
+          return ensureScriptsLoaded(doc).then(() => {
+            oldMain.innerHTML = newMain.innerHTML;
+
+            // Swap the header's content so the destination page's own
+            // active-link highlighting (aria-current) and any per-page
+            // header differences come through. Keep the outer <header>
+            // element itself and force the shared class on so a page
+            // whose source is missing it doesn't lose the fixed-position
+            // styling or scroll behavior.
+            if (newHeader && oldHeader) {
+              oldHeader.innerHTML = newHeader.innerHTML;
+              oldHeader.classList.add("site-header");
+            }
+            if (newMobileNav && oldMobileNav) {
+              oldMobileNav.innerHTML = newMobileNav.innerHTML;
+            }
+
+            document.title = doc.title;
+
+            if (pushState) window.history.pushState({}, "", url);
+            window.scrollTo(0, 0);
+
+            // Header was just replaced — re-check its scrolled state
+            // immediately instead of waiting for the next scroll event.
+            if (window.__refreshHeaderScroll) window.__refreshHeaderScroll();
+
+            initMainWidgets();
+          });
+        })
+        .catch((err) => {
+          console.error("[page transition] falling back to full load:", err);
+          window.location.href = url;
+        })
+        .finally(() => {
+          overlay.classList.remove("is-active");
+          document.body.classList.remove("is-transitioning");
+          busy = false;
+        });
+    }
   }
 
   /* ---------------- scroll reveal ---------------- */
@@ -349,8 +531,9 @@
   function initQr() {
     const el = document.getElementById("qrcode");
     if (!el || typeof QRCode === "undefined") return;
+    el.innerHTML = "";
     new QRCode(el, {
-      text: "https://replus.app/download",
+      text: "https://replus.one/download",
       width: 108,
       height: 108,
       colorDark: "#000000",

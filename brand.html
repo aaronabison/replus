@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replus Brand Assets — Logos &amp; Badges</title>
+<meta name="description" content="Download the Replus logo and badges for websites, apps, and press — subject to the Replus Brand Asset License Agreement.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ---- Brand page: filter bar, asset cards, modal ---- */
+  .brand-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0 40px;
+  }
+  .toolbar-group { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toolbar-label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a8f98;
+    font-weight: 600;
+  }
+  .segmented {
+    display: inline-flex;
+    background: #f0f1f4;
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .segmented button {
+    border: none;
+    background: transparent;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #52565f;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .segmented button[aria-pressed="true"] {
+    background: dodgerblue;
+    color: #fff;
+  }
+  .segmented button:hover:not([aria-pressed="true"]) { background: #e4e6eb; }
+
+  .logo-card {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    border: 1px solid #e7e8ec;
+    border-radius: 16px;
+    padding: 24px 28px;
+    max-width: 520px;
+    margin: 0 auto 56px;
+    flex-wrap: wrap;
+  }
+  .logo-card img {
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+    flex-shrink: 0;
+  }
+  .logo-card-info h3 { margin: 0 0 4px; }
+  .logo-card-info p { margin: 0 0 14px; color: #6a6f78; font-size: 14px; }
+
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 20px;
+  }
+  .badge-card {
+    border: 1px solid #e7e8ec;
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+  }
+  .badge-card-preview {
+    background: #f4f5f7;
+    padding: 26px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+    transition: background 0.2s ease;
+  }
+  .badge-card.is-dark .badge-card-preview { background: #16171b; }
+  .badge-card-preview img { max-width: 100%; height: auto; display: block; }
+  .badge-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid #eef0f3;
+  }
+  .badge-card-label { font-size: 13px; color: #3a3d44; font-weight: 500; }
+  .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 8px; }
+
+  .brand-agreement-link {
+    display: block;
+    text-align: center;
+    margin-top: 28px;
+    font-size: 14px;
+    color: #6a6f78;
+  }
+  .brand-agreement-link a { color: dodgerblue; text-decoration: none; font-weight: 600; }
+  .brand-agreement-link a:hover { text-decoration: underline; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(15, 17, 20, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.is-open { display: flex; }
+  .modal-panel {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 84vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    user-select: none;
+  }
+  .modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid #eef0f3;
+  }
+  .modal-head h2 { margin: 0 0 4px; font-size: 19px; }
+  .modal-head p { margin: 0; font-size: 13px; color: #8a8f98; }
+  .modal-close {
+    border: none;
+    background: #f0f1f4;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    color: #52565f;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { background: #e4e6eb; }
+  .modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #33363d;
+  }
+  .modal-body h3 { font-size: 14px; margin: 20px 0 6px; }
+  .modal-body h3:first-child { margin-top: 0; }
+  .modal-body p, .modal-body li { margin: 0 0 8px; }
+  .modal-body ul, .modal-body ol { margin: 0 0 8px; padding-left: 20px; }
+  .modal-body .agreement-meta { color: #8a8f98; font-size: 12px; margin-bottom: 16px; }
+  .modal-foot {
+    padding: 16px 24px 22px;
+    border-top: 1px solid #eef0f3;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .agree-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: #33363d;
+  }
+  .agree-row input { margin-top: 3px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .modal-actions button { border-radius: 10px; }
+  .btn-secondary {
+    background: #f0f1f4;
+    color: #33363d;
+    border: none;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { background: #e4e6eb; }
+  .btn-agree {
+    background: dodgerblue;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-agree:disabled { background: #b9d7fb; cursor: not-allowed; }
+  .scroll-hint { font-size: 12px; color: #8a8f98; }
+</style>
+</head>
+<body>
+
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo"><button style="background-color:transparent; border-color:transparent; display:; gap:5px"><img src="replus-logo.jpg" style="width:30px; height:30px; border-radius:8px;">Replus</button></a>
+<nav class="site-nav" aria-label="Primary">
+  <a href="index.html" class="btn-pill-white">Home</a>
+  <a href="about.html" class="btn-pill-white">About</a>
+  <a href="team.html" class="btn-pill-white">Team</a>
+  <a href="brand.html" class="btn-pill-blue">Brand</a>
+  <a href="download.html" class="btn-pill-white">Download</a>
+  <a href="contact.html" class="btn-pill-white">Contact</a>
+</nav>
+    <a href="download.html" class="btn btn-primary nav-cta">Get Replus</a>
+    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false"><span class="menu-plus"></span></button>
+  </div>
+</header>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="about.html">About</a>
+  <a href="team.html">Team</a>
+  <a href="brand.html">Brand</a>
+  <a href="partnership.html">Partnership</a>
+
+  <a href="download.html">Download</a>
+  <a href="contact.html">Contact</a>
+  <p class="mobile-nav-foot">Use the tools that add to you.</p>
+</div>
+
+<main>
+<div id="replus-splash" style="
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+">
+  <div style="
+    width: 40px;
+    height: 40px;
+    border: 3px solid #1e90ff;
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  "></div>
+  
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</div>
+  <section class="page-hero">
+    <canvas class="plus-field" data-gap="50"></canvas>
+    <div class="wrap">
+      <span class="eyebrow">Brand Assets</span>
+      <h1>Everything you need to talk about Replus.</h1>
+      <p class="lede">Logos and badges for websites, apps, and press. Free to use for linking to or referencing Replus — subject to the license below.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+
+      <div class="logo-card">
+        <img src="brandsimg/replus-logo.png" alt="Replus logo">
+        <div class="logo-card-info">
+          <h3>Replus logo</h3>
+          <p>The primary mark, full size, unaltered.</p>
+          <button type="button" class="btn btn-primary btn-sm" id="logoDownloadBtn">Download PNG</button>
+        </div>
+      </div>
+
+      <div class="wrap section-head reveal" style="padding-top:0;">
+        <span class="eyebrow">Badges</span>
+        <h2>Pick a style, then pick a badge.</h2>
+      </div>
+
+      <div class="brand-toolbar">
+        <div class="toolbar-group">
+          <span class="toolbar-label">Shape</span>
+          <div class="segmented" id="shapeToggle" role="group" aria-label="Badge shape">
+            <button type="button" data-value="pill" aria-pressed="true">Pill</button>
+            <button type="button" data-value="rect" aria-pressed="false">Rectangular</button>
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <span class="toolbar-label">Theme</span>
+          <div class="segmented" id="themeToggle" role="group" aria-label="Badge theme">
+            <button type="button" data-value="light" aria-pressed="true">Light</button>
+            <button type="button" data-value="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="badge-grid" id="badgeGrid"></div>
+
+      <p class="brand-agreement-link">
+        Every download is subject to the <a href="#" id="readAgreementLink">Replus Brand Asset License Agreement</a>.
+      </p>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div style="background-color:transparent; border-color:transparent; display:flex; gap:5px"><img src="replus-logo-black.jpg" style="width:30px; height:30px; border-radius:8px;"><span class="logo">Replus</span></div>
+        <p>More than a social network — a complete social ecosystem.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="download.html">Download</a>
+          <a href="brand.html">Brand Assets</a>
+          <a href="partnership.html">Partnerships</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="team.html">Team</a>
+          <a href="aaron.html">Our Founder</a>
+          <a href="contact.html">Contact</a>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Replus Stacks.</span>
+      <div class="footer-social">
+        <a href="#">X</a>
+        <a href="#">Instagram</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Agreement modal -->
+<div class="modal-overlay" id="agreementModal">
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="agreementTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="agreementTitle">Replus Brand Asset License Agreement</h2>
+        <p id="modalSubhead">Scroll to the end to enable the checkbox below.</p>
+      </div>
+      <button type="button" class="modal-close js-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="agreementBody">
+      <p class="agreement-meta">Last updated: August 23, 2026 · Replus Stacks LTD</p>
+
+      <p>PLEASE READ THIS AGREEMENT CAREFULLY BEFORE DOWNLOADING OR USING ANY REPLUS LOGO, BADGE, ICON, OR OTHER BRAND ASSET MADE AVAILABLE ON THIS PAGE (COLLECTIVELY, THE "ASSETS"). BY DOWNLOADING, COPYING, DISPLAYING, OR OTHERWISE USING ANY ASSET, YOU ("YOU" OR "LICENSEE") AGREE TO BE BOUND BY THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT DOWNLOAD OR USE ANY ASSET.</p>
+
+      <h3>1. Parties</h3>
+      <p>This Agreement is between you and Replus Stacks LTD ("Replus," "we," "us," or "our"), the owner of the Replus name, logo, badges, and related trademarks (the "Marks").</p>
+
+      <h3>2. Grant of License</h3>
+      <p>Subject to your compliance with this Agreement, Replus grants you a limited, non-exclusive, non-transferable, non-sublicensable, revocable license to display and use the Assets solely to:</p>
+      <ul>
+        <li>indicate that your website, app, product, or content is available on, integrates with, links to, or is otherwise genuinely associated with Replus;</li>
+        <li>provide editorial or press coverage of Replus in articles, reviews, or reporting;</li>
+        <li>link to the Replus website, app store listing, or a specific Replus profile, page, or piece of content, using an Asset as a visual link ("badge use").</li>
+      </ul>
+      <p>This license does not grant any right to use the Assets for any other purpose, including your own branding, merchandise, or products.</p>
+
+      <h3>3. Permitted Uses</h3>
+      <p>You may: use the Assets in their unaltered, original form; resize them proportionally, provided the aspect ratio, colors, and detail remain unchanged and legible; place them on a background that does not obscure or distort them; and link them to the Replus website, app store listing, or a specific Replus profile or piece of content.</p>
+
+      <h3>4. Prohibited Uses</h3>
+      <p>You may not:</p>
+      <ul>
+        <li>modify, distort, recolor, rotate, animate, or add effects (outlines, shadows, gradients, etc.) to any Asset beyond what Section 3 permits;</li>
+        <li>combine or merge an Asset with any other logo, mark, image, or text to create a new composite mark;</li>
+        <li>use an Asset in, on, or as part of your own company name, product name, app icon, or logo;</li>
+        <li>use an Asset in any way that states or implies an endorsement, sponsorship, partnership, or affiliation with Replus that does not exist;</li>
+        <li>use an Asset in connection with unlawful, defamatory, obscene, pornographic, discriminatory, hateful, or violent content, or in connection with a product or service that competes with Replus;</li>
+        <li>use an Asset in a way that disparages, tarnishes, or damages Replus's reputation or goodwill;</li>
+        <li>sell, license, sublicense, rent, or otherwise redistribute the Assets, alone or bundled with other materials, to any third party;</li>
+        <li>continue using an outdated version of an Asset after Replus has asked you to update to a current version;</li>
+        <li>use the Assets in any jurisdiction where doing so would violate applicable law.</li>
+      </ul>
+
+      <h3>5. Ownership</h3>
+      <p>Replus retains all right, title, and interest in and to the Assets and the Marks, including all associated trademark, copyright, and other intellectual property rights, worldwide. Nothing in this Agreement transfers any ownership right to you. All goodwill arising from your use of the Assets accrues solely to Replus.</p>
+
+      <h3>6. No Warranty</h3>
+      <p>THE ASSETS ARE PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, OR NON-INFRINGEMENT. REPLUS DOES NOT WARRANT THAT ANY ASSET WILL MEET YOUR REQUIREMENTS OR BE ERROR-FREE.</p>
+
+      <h3>7. Limitation of Liability</h3>
+      <p>TO THE FULLEST EXTENT PERMITTED BY LAW, REPLUS IS NOT LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR GOODWILL, ARISING FROM YOUR DOWNLOAD OR USE OF THE ASSETS, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. REPLUS'S TOTAL LIABILITY UNDER THIS AGREEMENT WILL NOT EXCEED ONE HUNDRED U.S. DOLLARS ($100). Replus is not responsible for how, where, or in what context you display the Assets, or for any third-party claims brought against you arising from your use of them.</p>
+
+      <h3>8. Indemnification</h3>
+      <p>You agree to indemnify, defend, and hold harmless Replus and its officers, directors, employees, and agents from any claims, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising from your use of the Assets, your breach of this Agreement, or your violation of any law or third-party right.</p>
+
+      <h3>9. Term and Termination</h3>
+      <p>This license takes effect when you first download or use an Asset and continues until terminated. Replus may revoke, suspend, or modify this license, or require you to stop using any Asset and remove it from anywhere it has been published, at any time and for any reason, with or without notice. Upon termination or such a request, you must immediately stop using the Assets and delete or destroy any copies in your possession or control, including cached or archived copies where reasonably practicable.</p>
+
+      <h3>10. Changes to This Agreement</h3>
+      <p>Replus may update this Agreement from time to time. The version in effect at the time of each download governs that download. Continuing to use a previously downloaded Asset after an update constitutes acceptance of the updated terms for any new or continued use.</p>
+
+      <h3>11. Governing Law</h3>
+      <p>This Agreement is governed by the laws of [insert governing jurisdiction], without regard to conflict-of-law principles, and any disputes arising under it will be resolved in the courts located there.</p>
+
+      <h3>12. Miscellaneous</h3>
+      <p>If any provision of this Agreement is found unenforceable, the remaining provisions stay in effect. This Agreement is the entire agreement between you and Replus regarding use of the Assets and supersedes any prior agreements on the subject. Replus's failure to enforce a provision is not a waiver of it.</p>
+
+      <h3>13. Contact</h3>
+      <p>Questions about this Agreement, or requests for a use not covered here, can be sent to <a href="mailto:office@replus.one">office@replus.one</a></p>
+    </div>
+    <div class="modal-foot" id="modalFooterGate">
+      <label class="agree-row">
+        <input type="checkbox" id="agreeCheckbox" disabled>
+        <span>I have read and agree to the Replus Brand Asset License Agreement. <span class="scroll-hint">(scroll to the bottom to enable this)</span></span>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary js-modal-close">Cancel</button>
+        <button type="button" class="btn-agree" id="agreeDownloadBtn" disabled>Agree &amp; Download</button>
+      </div>
+    </div>
+    <div class="modal-foot" id="modalFooterRead" style="display:none;">
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary js-modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var BADGES = [
+    { label: "Find us on Replus", slug: "find-us-on-replus" },
+    { label: "Follow us on Replus", slug: "follow-us-on-replus" },
+    { label: "Join us on Replus", slug: "join-us-on-replus" },
+    { label: "Available on Replus", slug: "available-on-replus" },
+    { label: "Now on Replus", slug: "now-on-replus" },
+    { label: "Find me on Replus", slug: "find-me-on-replus" },
+    { label: "Follow me on Replus", slug: "follow-me-on-replus" },
+    { label: "Add me on Replus", slug: "add-me-on-replus" },
+    { label: "Listen on Replus Podcasts", slug: "listen-on-replus-podcasts" },
+    { label: "Read on Replus", slug: "read-on-replus" },
+    { label: "View on Replus Arts", slug: "view-on-replus-arts" },
+    { label: "Join the Circle on Replus", slug: "join-the-circle-on-replus" },
+    { label: "Share on Replus", slug: "share-on-replus" },
+    { label: "Scan to join Replus", slug: "scan-to-join-replus" },
+    { label: "Get Replus", slug: "get-replus" },
+    { label: "Download Replus", slug: "download-replus" },
+    { label: "Powered by Replus", slug: "powered-by-replus" },
+    { label: "Message me on Replus", slug: "message-me-on-replus" }
+  ];
+
+  var state = { shape: "pill", theme: "light" };
+  var pendingDownload = null;
+  var modalMode = "gate";
+
+  function renderGrid() {
+    var grid = document.getElementById("badgeGrid");
+    grid.innerHTML = "";
+    BADGES.forEach(function (b) {
+      var file = "brandsimg/" + state.shape + "-" + state.theme + "-" + b.slug + ".png";
+      var filename = "replus-badge-" + state.shape + "-" + state.theme + "-" + b.slug + ".png";
+      var card = document.createElement("div");
+      card.className = "badge-card" + (state.theme === "dark" ? " is-dark" : "");
+      card.innerHTML =
+        '<div class="badge-card-preview"><img src="' + file + '" alt="' + b.label + ' badge, ' + state.shape + ' shape, ' + state.theme + ' theme"></div>' +
+        '<div class="badge-card-foot">' +
+        '<span class="badge-card-label">' + b.label + "</span>" +
+        '<button type="button" class="btn btn-ghost btn-sm js-download-btn" data-file="' + file + '" data-filename="' + filename + '">Download</button>' +
+        "</div>";
+      grid.appendChild(card);
+    });
+  }
+
+  function wireToggle(id, onChange) {
+    var group = document.getElementById(id);
+    group.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        group.querySelectorAll("button").forEach(function (b2) { b2.setAttribute("aria-pressed", "false"); });
+        btn.setAttribute("aria-pressed", "true");
+        onChange(btn.dataset.value);
+      });
+    });
+  }
+
+  wireToggle("shapeToggle", function (v) { state.shape = v; renderGrid(); });
+  wireToggle("themeToggle", function (v) { state.theme = v; renderGrid(); });
+
+  function triggerDownload(file, filename) {
+    var a = document.createElement("a");
+    a.href = file;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    
+  }
+
+  function requestDownload(file, filename) {
+    if (sessionStorage.getItem("replusBrandAgreementAccepted") === "true") {
+      triggerDownload(file, filename);
+      return;
+    }
+    pendingDownload = { file: file, filename: filename };
+    modalMode = "gate";
+    openModal();
+  }
+
+  function openModal() {
+    var modal = document.getElementById("agreementModal");
+    var body = document.getElementById("agreementBody");
+    var checkbox = document.getElementById("agreeCheckbox");
+    var agreeBtn = document.getElementById("agreeDownloadBtn");
+    var gateFoot = document.getElementById("modalFooterGate");
+    var readFoot = document.getElementById("modalFooterRead");
+    var subhead = document.getElementById("modalSubhead");
+
+    modal.classList.add("is-open");
+    body.scrollTop = 0;
+
+    if (modalMode === "gate") {
+      checkbox.checked = false;
+      checkbox.disabled = true;
+      agreeBtn.disabled = true;
+      gateFoot.style.display = "flex";
+      readFoot.style.display = "none";
+      subhead.textContent = "Scroll to the end to enable the checkbox below.";
+    } else {
+      gateFoot.style.display = "none";
+      readFoot.style.display = "flex";
+      subhead.textContent = "Reference copy — no action needed unless you're downloading an asset.";
+    }
+  }
+
+  function closeModal() {
+    document.getElementById("agreementModal").classList.remove("is-open");
+    pendingDownload = null;
+  }
+
+  document.getElementById("agreementBody").addEventListener("scroll", function () {
+    if (modalMode !== "gate") return;
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 8) {
+      document.getElementById("agreeCheckbox").disabled = false;
+    }
+  });
+
+  document.getElementById("agreeCheckbox").addEventListener("change", function () {
+    document.getElementById("agreeDownloadBtn").disabled = !this.checked;
+  });
+
+  document.getElementById("agreeDownloadBtn").addEventListener("click", function () {
+    sessionStorage.setItem("replusBrandAgreementAccepted", "true");
+        if (pendingDownload) {
+      triggerDownload(pendingDownload.file, pendingDownload.filename);
+      pendingDownload = null;
+    }
+    sessionStorage.setItem("replusBrandAgreementAccepted", "false");
+    closeModal();
+
+  });
+
+  document.getElementById("readAgreementLink").addEventListener("click", function (e) {
+    e.preventDefault();
+    modalMode = "read";
+    openModal();
+  });
+
+  document.querySelectorAll(".js-modal-close").forEach(function (btn) {
+    btn.addEventListener("click", closeModal);
+  });
+
+  document.getElementById("agreementModal").addEventListener("click", function (e) {
+    if (e.target === this) closeModal();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeModal();
+  });
+
+  document.getElementById("logoDownloadBtn").addEventListener("click", function () {
+    requestDownload("brandsimg/replus-logo.png", "brandsimg/replus-logo.png");
+  });
+
+  document.getElementById("badgeGrid").addEventListener("click", function (e) {
+    var btn = e.target.closest(".js-download-btn");
+    if (!btn) return;
+    requestDownload(btn.dataset.file, btn.dataset.filename);
+  });
+
+  renderGrid();
+</script>
+
+<script src="script.js"></script>
+</body>
+</html>
